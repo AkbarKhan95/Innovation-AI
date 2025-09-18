@@ -11,8 +11,14 @@ const DigitalIndiaIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h
         strokeLinecap="round"
         strokeLinejoin="round"
     >
-        <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-        <path d="M9 2v4M15 2v4M2 9h4M2 15h4M9 22v-4M15 22v-4M22 9h-4M22 15h-4M9 15h6v6H9zM9 9h6v6H9z"></path>
+        <rect x="7" y="2" width="10" height="20" rx="2" ry="2"></rect>
+        <path d="M12 18h.01" />
+        <path d="M4.93 4.93l1.41 1.41" />
+        <path d="M17.66 17.66l1.41 1.41" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+        <path d="M4.93 19.07l1.41-1.41" />
+        <path d="M17.66 6.34l1.41-1.41" />
     </svg>
 );
 

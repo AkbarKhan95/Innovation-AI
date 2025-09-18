@@ -11,8 +11,11 @@ const SustainabilityIcon: React.FC<{ className?: string }> = ({ className = 'w-6
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
-    <path d="M16 8L2 22" />
+    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" />
+    <path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10" />
+    <path d="M2 12h20" />
+    <path d="M15.5 6.5A5 5 0 0 0 12 2a5 5 0 0 0-3.5 4.5c0 2.8 2.8 5.5 3.5 5.5s3.5-2.7 3.5-5.5z" />
   </svg>
 );
 

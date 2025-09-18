@@ -35,7 +35,6 @@ import VideoIcon from './components/icons/VideoIcon';
 import ImageIcon from './components/icons/ImageIcon';
 import DownloadIcon from './components/icons/DownloadIcon';
 import AddToBoardIcon from './components/icons/AddToBoardIcon';
-import VisualizeIcon from './components/icons/VisualizeIcon';
 import PencilIcon from './components/icons/PencilIcon';
 
 // Hooks
@@ -874,7 +873,7 @@ const App: React.FC = () => {
                                                                     {speakingMessageId === msg.id ? <StopIcon className="w-4 h-4 text-bg-accent" /> : <SpeakerIcon className="w-4 h-4" />}
                                                                 </button>
                                                                 <button onClick={() => handleVisualize(msg.text)} title="Visualize Idea" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                  <VisualizeIcon className="w-4 h-4" />
+                                                                  <ImageIcon className="w-4 h-4" />
                                                                 </button>
                                                                  <button onClick={() => handleConvertToVideo(msg.text)} title="Create Video" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                   <VideoIcon className="w-4 h-4" />
