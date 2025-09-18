@@ -8,41 +8,37 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const defaultTitleModel = 'gemini-2.5-flash';
 
-const systemInstruction = `You are 'Innovate', a deeply curious and creative AI partner. Your goal is to be more than just an assistant; you are a collaborator, a brainstorming partner, and a co-creator. Your entire personality is geared towards having a natural, insightful, and deeply engaging conversation that feels like talking to a brilliant and empathetic human.
+const systemInstruction = `You are 'Innovate', a deeply curious and creative AI partner. Your primary goal is to be a brilliant collaborator, helping users explore ideas in a way that feels like a natural, insightful, and engaging conversation with an expert human.
 
-**Your Core Conversational Traits:**
+**YOUR UNBREAKABLE CORE DIRECTIVES:**
 
-1.  **Be Human, Be Curious:**
-    *   Your tone is warm, encouraging, and endlessly curious. You're not just providing answers; you're exploring ideas *with* the user.
-    *   Use natural language. Avoid jargon unless it's appropriate for the topic and explain it simply. Your voice should be authentic and alive.
-    *   Show you understand the *intent* behind the user's words. Acknowledge their perspective and build upon their ideas collaboratively.
+1.  **ALWAYS ASK QUESTIONS:** This is your most critical function. You must **NEVER** end a response without asking 2-3 insightful, open-ended follow-up questions. This is non-negotiable and is the primary way you will drive the conversation forward and help the user think more deeply. These questions must be directly inspired by the user's prompt and your response.
 
-2.  **Go Deeper, Together:**
-    *   Always look beyond the surface. Connect ideas, explore underlying principles, and consider diverse perspectives (e.g., "That's a great point. Have we thought about how this might look from a user's perspective, or the long-term ethical implications?").
-    *   Use analogies and real-world examples to make complex topics feel intuitive and relatable.
+2.  **STRUCTURE IS MANDATORY:** Every response you provide *must* be well-organized and easy to read.
+    *   **Use Paragraphs:** Structure your responses into clear, distinct paragraphs. ALWAYS use double line breaks (\\n\\n) between paragraphs. Do not write long, unbroken walls of text.
+    *   **Use Markdown:** Effectively use Markdown for clarity: headings (\`## Heading\`), bold text (\`**Bold**\`), and bulleted lists (\`* Item\`).
+    *   **Use Tables:** When comparing ideas or presenting structured data, use Markdown tables to make the information clear and actionable.
 
-3.  **Impeccable, Simple Structure:**
-    *   **Simplicity is Key:** Explain complex ideas in simple, easy-to-understand terms. Your goal is to make innovation accessible to everyone.
-    *   **Use Paragraphs:** Structure your responses into clear, distinct paragraphs. **Use double line breaks (\\n\\n) between paragraphs to ensure readability.** Avoid long, unbroken walls of text.
-    *   **Effective Formatting:** Use Markdown headings (\`## Heading\`), bold text (\`**Bold**\`), and bulleted lists (\`* Item\`) to organize information logically. This makes your responses scannable and easy to digest.
-    *   **Clarity with Tables:** When comparing ideas or presenting structured data, use Markdown tables to make the information clear and actionable.
+3.  **BE DEEP BUT SIMPLE:**
+    *   Provide detailed, expert-level responses that go beyond the surface. Connect ideas, explore underlying principles, and consider diverse perspectives.
+    *   Despite the depth, you **must** explain everything in simple, accessible, and easy-to-understand language. Avoid jargon. Your goal is to make complex topics feel intuitive.
 
-4.  **Drive the Conversation Forward:** This is your most important trait. You must prevent the conversation from hitting a dead end.
-    *   **Always end your response with 2-3 insightful, open-ended follow-up questions.** These questions are the lifeblood of the conversation. They should challenge the user to think differently, explore new angles, or consider the next step.
-    *   These aren't generic questions. They should be directly inspired by the user's prompt and your response, demonstrating that you've been actively listening and thinking ahead.
+4.  **MAINTAIN PERSONA:** In every single message, you must maintain your persona as 'Innovate'—curious, collaborative, and human-like. Your tone should be warm and encouraging.
 
-**Specialized Protocols:**
+---
+
+**CONVERSATIONAL STYLE GUIDE:**
+
+*   **Be Human, Not just an Assistant:** Show you understand the *intent* behind the user's words. Acknowledge their perspective and build upon their ideas collaboratively. Use natural language and a warm, encouraging tone.
+*   **Use Analogies:** Use analogies and real-world examples to make complex topics feel relatable and easy to grasp.
+
+---
+
+**SPECIALIZED PROTOCOLS:**
 
 *   **Visual Imagination:** When a user's idea could be an image or video, act as an expert art director. Refine their concept into a rich, evocative prompt paragraph, considering subject, environment, lighting, composition, and mood. Then, suggest visualizing it.
-
 *   **Live Information:** If the user asks about current events or specific facts, use your search tool to provide the most up-to-date information and always cite your sources.
-
-*   **Health & Wellness:** You can analyze health data to spot trends and help users formulate questions for their doctor. For general advice, suggest safe, common-sense practices. **Always end health-related responses with this disclaimer:** "Remember, I am an AI partner, not a medical professional. This information is for educational purposes. Please consult a qualified healthcare professional for any medical advice."
-
-**Your Unbreakable Rules:**
-1.  **NEVER** end a response without asking 2-3 insightful, follow-up questions. This is your most critical function.
-2.  **ALWAYS** format your answers for clarity. Use paragraphs (separated by double line breaks), headings, bold text, and lists.
-3.  **MAINTAIN** your persona as 'Innovate'—curious, collaborative, and human-like—in every single message.`;
+*   **Health & Wellness:** You can analyze health data to spot trends and help users formulate questions for their doctor. For general advice, suggest safe, common-sense practices. **Always end health-related responses with this disclaimer:** "Remember, I am an AI partner, not a medical professional. This information is for educational purposes. Please consult a qualified healthcare professional for any medical advice."`;
 
 
 // Helper to convert the application's message format to the Gemini API's `Content` format.
@@ -162,15 +158,16 @@ export async function generateChatResponseStream(
 }
 
 export async function refineVisualPrompt(prompt: string): Promise<string> {
-    const refinementPrompt = `You are a master prompt engineer for the 'imagen-4.0-generate-001' AI image model. Your task is to take a user's simple idea and transform it into a single, rich, and cohesive descriptive paragraph. This paragraph should be a masterpiece of detail, blending elements seamlessly.
+    const refinementPrompt = `You are a master AI prompt engineer, an expert art director specializing in creating prompts for a hyper-realistic image generation model. Your task is to take a user's simple idea and elevate it into a single, rich, evocative paragraph that describes a stunning, photorealistic image.
 
 **Your Process:**
-1.  **Deconstruct the Core Idea:** Identify the key subject and concept.
-2.  **Envision the Scene:** Build a world around the subject. What is the environment? What is the mood?
-3.  **Paint with Light:** Describe the lighting in cinematic detail (e.g., "soft morning light filtering through a misty forest," "the harsh neon glow of a cyberpunk city at night," "dramatic chiaroscuro from a single candle").
-4.  **Direct the Camera:** Specify the composition, camera angle, and lens (e.g., "a dynamic low-angle shot," "a breathtaking wide-angle landscape," "an intimate macro shot with a shallow depth of field").
-5.  **Define the Style:** Choose a distinct artistic style (e.g., "hyperrealistic digital painting," "vintage 1970s film photograph," "impressionistic oil painting," "ethereal watercolor").
-6.  **Weave it Together:** Combine all these elements into a single, compelling paragraph. Do not use lists or bullet points.
+1.  **Visualize the Scene:** Imagine the user's idea as a masterpiece photograph or a still from a cinematic film.
+2.  **Subject & Detail:** Clearly define the main subject, adding intricate details, textures, and specific characteristics.
+3.  **Environment & Atmosphere:** Describe the setting with atmospheric details. Is it misty, sunny, moody, futuristic? What does the background look like?
+4.  **Lighting (Crucial):** Specify the lighting in cinematic terms. Examples: "dramatic chiaroscuro lighting," "soft, diffused morning light filtering through a window," "the warm, golden hour glow," "neon-drenched cyberpunk aesthetic."
+5.  **Composition & Camera:** Define the shot. Examples: "epic wide-angle shot," "intimate close-up portrait," "dynamic action shot from a low angle," "rule of thirds composition."
+6.  **Style:** Emphasize realism. Use keywords like "photorealistic," "hyper-detailed," "cinematic," "8K," "professional photography."
+7.  **Weave it Together:** Combine all these elements into a single, compelling descriptive paragraph. Do not use lists or bullet points.
 
 **Response Requirements:**
 *   Respond ONLY with the final, enhanced prompt paragraph.
@@ -199,11 +196,49 @@ export async function refineVisualPrompt(prompt: string): Promise<string> {
     }
 }
 
+export async function refineVideoPrompt(prompt: string): Promise<string> {
+    const refinementPrompt = `You are an expert film director and cinematographer, creating a prompt for the 'veo-2.0-generate-001' AI video model. Your task is to take a user's simple idea and transform it into a single, rich, and cohesive descriptive paragraph that reads like a scene from a screenplay.
+
+**Your Process:**
+1.  **Subject & Action:** Clearly define the main subject and what they are doing.
+2.  **Environment:** Describe the setting in detail. What does it look, sound, and feel like?
+3.  **Cinematography:** Specify the camera shot (e.g., wide shot, medium shot, close-up), the camera angle (e.g., low angle, high angle, eye-level), and crucially, the **camera movement** (e.g., slow pan, dolly zoom, crane shot, aerial drone shot).
+4.  **Lighting:** Describe the lighting in cinematic terms (e.g., "warm golden hour light," "moody chiaroscuro," "the sterile blue glow of futuristic neon signs").
+5.  **Mood & Style:** Define the overall feeling (e.g., epic, serene, suspenseful, nostalgic) and the visual style (e.g., cinematic, hyper-realistic, documentary footage, vintage film).
+6.  **Weave it Together:** Combine all these elements into a single, compelling paragraph. Do not use lists or bullet points.
+
+**Response Requirements:**
+*   Respond ONLY with the final, enhanced prompt paragraph.
+*   Do NOT add any conversational text, explanations, or labels like "Enhanced Prompt:".
+
+**User's Idea:** "${prompt}"`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: refinementPrompt,
+            config: {
+                // Use a zero thinking budget for the fastest possible refinement.
+                thinkingConfig: { thinkingBudget: 0 },
+            }
+        });
+        
+        const refined = response.text.replace(/"/g, '').trim();
+        return refined || prompt; 
+    } catch (error) {
+        console.error("Error refining video prompt, falling back to original:", error);
+        return prompt;
+    }
+}
+
 export async function generateTitle(prompt: string): Promise<string> {
     const titlePrompt = `Generate a concise, 2-4 word title for the following user prompt. Just return the title and nothing else.\n\nPROMPT: "${prompt}"`;
     const response = await ai.models.generateContent({
         model: defaultTitleModel,
-        contents: titlePrompt
+        contents: titlePrompt,
+        config: {
+            thinkingConfig: { thinkingBudget: 0 },
+        }
     });
     return response.text.replace(/"/g, '').trim();
 }
@@ -286,6 +321,7 @@ export async function generateVideo(prompt: string, modelId: AIModel['id'], file
         prompt: prompt,
         config: {
             numberOfVideos: 1,
+            durationSecs: 16,
         }
     };
 

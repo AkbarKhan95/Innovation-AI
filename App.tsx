@@ -6,7 +6,7 @@ import type { Message, ChatSession, User, Theme, VoiceOption, AIModel, Topic, Gr
 import type { Chat } from '@google/genai';
 
 // Services
-import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt } from './services/geminiService';
+import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt, refineVideoPrompt } from './services/geminiService';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -115,6 +115,8 @@ const getFriendlyErrorMessage = (error: unknown): string => {
     return 'An unknown error occurred.';
 };
 
+const videoLoadingMessages = ["🎬 Directing your scene...", "💡 Adjusting the lighting...", "🎥 Camera is rolling...", "🎞️ Rendering the final cut... this can take a few minutes."];
+
 
 const App: React.FC = () => {
     // State
@@ -138,6 +140,7 @@ const App: React.FC = () => {
     const [editingMessage, setEditingMessage] = useState<Message | null>(null);
     const [editText, setEditText] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
 
 
     // Refs
@@ -155,6 +158,7 @@ const App: React.FC = () => {
     // Derived State
     const currentSession = chatSessions.find(s => s.id === currentSessionId);
     const lastAiMessage = [...(currentSession?.messages ?? [])].reverse().find(m => m.sender === 'ai');
+    const isAnyVideoLoading = currentSession?.messages.some(m => m.loading === 'video') ?? false;
     
     // Effects
     useEffect(() => {
@@ -202,6 +206,29 @@ const App: React.FC = () => {
             pendingPrompt.current = null;
         }
     }, [currentSession]);
+
+    // Effect for cycling video loading messages
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        
+        if (isAnyVideoLoading) {
+            let messageIndex = 0;
+            setVideoLoadingMessage(videoLoadingMessages[0]);
+            
+            intervalId = setInterval(() => {
+                messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
+                setVideoLoadingMessage(videoLoadingMessages[messageIndex]);
+            }, 4000);
+        } else {
+             setVideoLoadingMessage('');
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [isAnyVideoLoading]);
 
     // Auto-resize textarea
     useEffect(() => {
@@ -270,14 +297,76 @@ const App: React.FC = () => {
         }
     };
     
+    const updateAIMessage = (messageId: string, updates: Partial<Message>) => {
+        setChatSessions(prev => prev.map(session => {
+            if (session.id !== currentSessionId) return session;
+            
+            const updatedMessages = session.messages.map(msg => {
+                if (msg.id === messageId) {
+                    return { ...msg, ...updates };
+                }
+                return msg;
+            });
+            return { ...session, messages: updatedMessages };
+        }));
+    };
+
+    const generateVisualResponse = async (text: string, modelType: 'Image' | 'Video') => {
+        if (!currentSession) return;
+
+        setIsLoading(true);
+
+        const aiResponseMessage: Message = { 
+            id: uuidv4(), 
+            sender: 'ai', 
+            text: '',
+            loading: modelType === 'Image' ? 'image' : 'video' 
+        };
+
+        setChatSessions(prev => prev.map(s =>
+            s.id === currentSession.id ? { ...s, messages: [...s.messages, aiResponseMessage] } : s
+        ));
+        
+        try {
+            if (modelType === 'Image') {
+                const modelId = 'imagen-4.0-generate-001';
+                const refinedPrompt = await refineVisualPrompt(text);
+                const imageUrl = await generateImage(refinedPrompt, modelId);
+                updateAIMessage(aiResponseMessage.id, { imageUrl, text: "Your image is ready!", loading: false });
+            } else if (modelType === 'Video') {
+                const modelId = 'veo-2.0-generate-001';
+                const refinedPrompt = await refineVideoPrompt(text);
+                let operation = await generateVideo(refinedPrompt, modelId);
+                while (!operation.done) {
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    operation = await getVideosOperation(operation);
+                }
+                const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+                if (downloadLink) {
+                    const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+                    if (!videoResponse.ok) throw new Error(`Failed to fetch video: ${videoResponse.statusText}`);
+                    const videoBlob = await videoResponse.blob();
+                    const videoUrl = URL.createObjectURL(videoBlob);
+                    updateAIMessage(aiResponseMessage.id, { videoUrl, text: "Your video is ready!", loading: false });
+                } else {
+                    throw new Error("Video generation failed to produce a result.");
+                }
+            }
+        } catch (error) {
+            console.error("Error generating visual content:", error);
+            const errorMessage = getFriendlyErrorMessage(error);
+            updateAIMessage(aiResponseMessage.id, { text: `Sorry, I ran into an error: ${errorMessage}`, loading: false });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleVisualize = (text: string) => {
-        const prompt = `Visualize the following concept: ${text}`;
-        handleNewChat('imagen-4.0-generate-001', prompt);
+        generateVisualResponse(text, 'Image');
     };
 
     const handleConvertToVideo = (text: string) => {
-        const prompt = `Create a video based on this idea: ${text}`;
-        handleNewChat('veo-2.0-generate-001', prompt);
+        generateVisualResponse(text, 'Video');
     };
 
     const handleSelectChat = (id: string) => {
@@ -330,20 +419,6 @@ const App: React.FC = () => {
         setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, modelId } : s));
         // Reset the chatRef so a new chat instance is created with the new model
         chatRef.current = null;
-    };
-
-    const updateAIMessage = (messageId: string, updates: Partial<Message>) => {
-        setChatSessions(prev => prev.map(session => {
-            if (session.id !== currentSessionId) return session;
-            
-            const updatedMessages = session.messages.map(msg => {
-                if (msg.id === messageId) {
-                    return { ...msg, ...updates };
-                }
-                return msg;
-            });
-            return { ...session, messages: updatedMessages };
-        }));
     };
 
     const handleFormSubmit = (e: React.FormEvent) => {
@@ -441,14 +516,14 @@ const App: React.FC = () => {
                     const refinedPrompt = await refineVisualPrompt(prompt);
                     if (file && file.type.startsWith('image/')) {
                         const { imageUrl, text } = await editImage(refinedPrompt, file);
-                        updateAIMessage(aiResponseMessage.id, { imageUrl, text: text || refinedPrompt, loading: false });
+                        updateAIMessage(aiResponseMessage.id, { imageUrl, text: "Your edited image is ready!", loading: false });
                     } else {
                         const imageUrl = await generateImage(refinedPrompt, modelId);
-                        updateAIMessage(aiResponseMessage.id, { imageUrl, text: refinedPrompt, loading: false });
+                        updateAIMessage(aiResponseMessage.id, { imageUrl, text: "Your image is ready!", loading: false });
                     }
                 } else if (model?.type === 'Video') {
                     updateAIMessage(aiResponseMessage.id, { text: "", loading: 'video' });
-                    const refinedPrompt = await refineVisualPrompt(prompt);
+                    const refinedPrompt = await refineVideoPrompt(prompt);
                     let operation = await generateVideo(refinedPrompt, modelId, file);
                     while (!operation.done) {
                         await new Promise(resolve => setTimeout(resolve, 10000));
@@ -460,7 +535,7 @@ const App: React.FC = () => {
                         if (!videoResponse.ok) throw new Error(`Failed to fetch video: ${videoResponse.statusText}`);
                         const videoBlob = await videoResponse.blob();
                         const videoUrl = URL.createObjectURL(videoBlob);
-                        updateAIMessage(aiResponseMessage.id, { videoUrl, text: `Your video for "${refinedPrompt}" is ready!`, loading: false });
+                        updateAIMessage(aiResponseMessage.id, { videoUrl, text: "Your video is ready!", loading: false });
                     } else {
                         updateAIMessage(aiResponseMessage.id, { text: "Sorry, video generation failed.", loading: false });
                     }
@@ -471,6 +546,10 @@ const App: React.FC = () => {
                 updateAIMessage(aiResponseMessage.id, { text: `Sorry, I ran into an error: ${errorMessage}`, loading: false });
             } finally {
                 setIsLoading(false);
+                const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
+                if (shouldGenerateTitle) {
+                    generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
+                }
             }
         }
     };
@@ -506,6 +585,16 @@ const App: React.FC = () => {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const MAX_FILE_SIZE_MB = 10;
+            const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                alert(`File size exceeds the limit of ${MAX_FILE_SIZE_MB}MB. Please choose a smaller file.`);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 setAttachedFile({
@@ -743,7 +832,16 @@ const App: React.FC = () => {
                                                             }
                                                         `}>
                                                             <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'prose-invert' : 'dark:prose-invert'}`}>
-                                                                {msg.loading ? <LoadingSpinner /> : <MessageContent text={msg.text} isStreaming={isStreaming} />}
+                                                                {msg.loading === 'video' ? (
+                                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                                        <p className="text-text-secondary text-sm mb-2 animate-fade-in">{videoLoadingMessage}</p>
+                                                                        <LoadingSpinner />
+                                                                    </div>
+                                                                ) : msg.loading ? (
+                                                                    <LoadingSpinner />
+                                                                ) : (
+                                                                    <MessageContent text={msg.text} isStreaming={isStreaming} />
+                                                                )}
                                                                 {msg.imageUrl && (
                                                                      <div className="mt-2 relative">
                                                                         {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
@@ -753,7 +851,6 @@ const App: React.FC = () => {
                                                                 )}
                                                                 {msg.videoUrl && (
                                                                      <div className="mt-2 relative">
-                                                                        {msg.loading === 'video' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><p className="text-white text-sm">Generating video... this can take a moment.</p><LoadingSpinner /></div>}
                                                                         <video src={msg.videoUrl} controls className="rounded-lg w-full h-auto"></video>
                                                                         <a href={msg.videoUrl} download={`innovation-ai-video-${msg.id}.mp4`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
