@@ -1,0 +1,7 @@
+{
+  "name": "AI for India's Innovation",
+  "description": "An AI-powered application to generate innovative ideas for India's future across key sectors like sustainability, defence, healthcare, digital initiatives, transport, and energy.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
