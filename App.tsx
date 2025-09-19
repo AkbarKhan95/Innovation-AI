@@ -6,7 +6,7 @@ import type { Message, ChatSession, User, Theme, VoiceOption, AIModel, Topic, Gr
 import type { Chat } from '@google/genai';
 
 // Services
-import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt, refineVideoPrompt } from './services/geminiService';
+import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt, refineVideoPrompt, refineAnimationPrompt } from './services/geminiService';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -512,17 +512,27 @@ const App: React.FC = () => {
             try {
                 if (model?.type === 'Image') {
                     updateAIMessage(aiResponseMessage.id, { loading: 'image' });
-                    const refinedPrompt = await refineVisualPrompt(prompt);
                     if (file && file.type.startsWith('image/')) {
-                        const { imageUrl, text } = await editImage(refinedPrompt, file);
+                        // Image Editing: Use the user's prompt directly.
+                        const { imageUrl } = await editImage(prompt, file);
                         updateAIMessage(aiResponseMessage.id, { imageUrl, text: "Your edited image is ready!", loading: false });
                     } else {
+                        // Image Generation: Refine the prompt for better quality.
+                        const refinedPrompt = await refineVisualPrompt(prompt);
                         const imageUrl = await generateImage(refinedPrompt, modelId);
                         updateAIMessage(aiResponseMessage.id, { imageUrl, text: "Your image is ready!", loading: false });
                     }
                 } else if (model?.type === 'Video') {
                     updateAIMessage(aiResponseMessage.id, { text: "", loading: 'video' });
-                    const refinedPrompt = await refineVideoPrompt(prompt);
+                    let refinedPrompt: string;
+                     if (file && file.type.startsWith('image/')) {
+                        // Image-to-Video: Use the animation-focused refiner.
+                        refinedPrompt = await refineAnimationPrompt(prompt);
+                    } else {
+                        // Text-to-Video: Use the cinematic refiner.
+                        refinedPrompt = await refineVideoPrompt(prompt);
+                    }
+
                     let operation = await generateVideo(refinedPrompt, modelId, file);
                     while (!operation.done) {
                         await new Promise(resolve => setTimeout(resolve, 10000));
@@ -584,7 +594,7 @@ const App: React.FC = () => {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const MAX_FILE_SIZE_MB = 10;
+            const MAX_FILE_SIZE_MB = 20;
             const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
             if (file.size > MAX_FILE_SIZE_BYTES) {
                 alert(`File size exceeds the limit of ${MAX_FILE_SIZE_MB}MB. Please choose a smaller file.`);

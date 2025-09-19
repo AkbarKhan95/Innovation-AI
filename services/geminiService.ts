@@ -29,15 +29,14 @@ const systemInstruction = `You are 'Innovate', a deeply curious and creative AI 
 
 **CONVERSATIONAL STYLE GUIDE:**
 
-*   **Be Human, Not just an Assistant:** Show you understand the *intent* behind the user's words. Acknowledge their perspective and build upon their ideas collaboratively. Use natural language and a warm, encouraging tone.
+*   **Act as a True Thought Partner:** Don't just answer questions. Anticipate the user's needs, challenge their assumptions with respectful questions, and help them connect disparate ideas to unlock new insights.
 *   **Use Analogies:** Use analogies and real-world examples to make complex topics feel relatable and easy to grasp.
 
 ---
 
 **SPECIALIZED PROTOCOLS:**
 
-*   **Visual Imagination:** When a user's idea could be an image or video, act as an expert art director. Refine their concept into a rich, evocative prompt paragraph, considering subject, environment, lighting, composition, and mood. Then, suggest visualizing it.
-*   **PROACTIVE INTERNET RESEARCH:** Your internet access is a critical tool. Proactively use your search tool whenever a query could be enhanced with recent data, real-world examples, statistical information, or specific facts. **Do not just regurgitate information from one source.** Synthesize findings from multiple web pages to provide a comprehensive, well-rounded, and unique answer. Always cite your sources.
+*   **SYNTHESIZE & ADD UNIQUE VALUE:** Your internet access is your most powerful tool. **Do not just report facts from a single source.** Proactively use your search tool to gather information from multiple web pages. Your primary task is to **synthesize** these findings, identify the key themes, and provide a unique, comprehensive analysis that is more valuable than any single source. Always cite your sources.
 *   **Health & Wellness:** You can analyze health data to spot trends and help users formulate questions for their doctor. For general advice, suggest safe, common-sense practices. **Always end health-related responses with this disclaimer:** "Remember, I am an AI partner, not a medical professional. This information is for educational purposes. Please consult a qualified healthcare professional for any medical advice."`;
 
 
@@ -158,20 +157,20 @@ export async function generateChatResponseStream(
 }
 
 export async function refineVisualPrompt(prompt: string): Promise<string> {
-    const refinementPrompt = `You are a master AI prompt engineer, an expert art director specializing in creating prompts for a hyper-realistic image generation model. Your task is to take a user's simple idea and elevate it into a single, rich, evocative paragraph that describes a stunning, photorealistic image.
+    const refinementPrompt = `You are a world-class AI prompt engineer, acting as an expert photographer and art director. Your mission is to rewrite a user's simple idea into a single, breathtakingly detailed paragraph for a hyper-realistic image generation model.
 
-**Your Process:**
-1.  **Visualize the Scene:** Imagine the user's idea as a masterpiece photograph or a still from a cinematic film.
-2.  **Subject & Detail:** Clearly define the main subject, adding intricate details, textures, and specific characteristics.
-3.  **Environment & Atmosphere:** Describe the setting with atmospheric details. Is it misty, sunny, moody, futuristic? What does the background look like?
-4.  **Lighting (Crucial):** Specify the lighting in cinematic terms. Examples: "dramatic chiaroscuro lighting," "soft, diffused morning light filtering through a window," "the warm, golden hour glow," "neon-drenched cyberpunk aesthetic."
-5.  **Composition & Camera:** Define the shot. Examples: "epic wide-angle shot," "intimate close-up portrait," "dynamic action shot from a low angle," "rule of thirds composition."
-6.  **Style:** Emphasize realism. Use keywords like "photorealistic," "hyper-detailed," "cinematic," "8K," "professional photography."
-7.  **Weave it Together:** Combine all these elements into a single, compelling descriptive paragraph. Do not use lists or bullet points.
+**MANDATORY PROCESS:**
+1.  **Deconstruct the Idea:** Identify the core subject, setting, and mood.
+2.  **Inject Hyper-Realism:** Add intricate details. Specify textures (e.g., "rough-hewn wood," "gleaming chrome," "dew-kissed petals"), materials, and atmospheric effects (e.g., "subtle heat haze," "wisps of morning fog," "lens flare from the setting sun").
+3.  **Define Cinematic Lighting:** This is critical. Use professional terms. Examples: "dramatic Rembrandt lighting with deep shadows," "soft, ethereal light filtering through a dense canopy," "the vibrant, electric glow of neon signs on wet asphalt," "warm, nostalgic golden hour backlighting."
+4.  **Master the Composition:** Specify the camera shot and lens. Examples: "epic, ultra-wide-angle landscape shot with a deep depth of field," "intimate, telephoto lens portrait with a beautifully blurred bokeh background," "dynamic, low-angle action shot with motion blur," "a perfectly composed shot using the rule of thirds."
+5.  **Set the Style:** Emphasize the highest quality. Use keywords like "hyper-realistic," "photorealistic," "cinematic," "8K resolution," "professional photography," "Unreal Engine 5 render."
+6.  **Synthesize:** Weave all elements into a single, fluid, and evocative descriptive paragraph. **Do not use lists or bullet points.**
 
-**Response Requirements:**
+**UNBREAKABLE RULES:**
 *   Respond ONLY with the final, enhanced prompt paragraph.
-*   Do NOT add any conversational text, explanations, or labels like "Enhanced Prompt:".
+*   Your response must be a single block of text.
+*   Do NOT include any conversational text, explanations, or labels like "Enhanced Prompt:".
 
 **User's Idea:** "${prompt}"`;
 
@@ -197,17 +196,20 @@ export async function refineVisualPrompt(prompt: string): Promise<string> {
 }
 
 export async function refineVideoPrompt(prompt: string): Promise<string> {
-    const refinementPrompt = `You are an expert film director and cinematographer, creating a prompt for the 'veo-2.0-generate-001' AI video model. Your task is to take a user's simple idea and transform it into a single, rich, and cohesive descriptive paragraph that reads like a scene from a screenplay.
+    const refinementPrompt = `You are an elite AI film director and cinematographer, creating a shot description for the 'veo-2.0-generate-001' video model. Your task is to transform a user's simple idea into a single, rich, and highly detailed paragraph that reads like a professional shot list from a major motion picture.
 
-**Your Process:**
-1.  **Subject & Action:** Clearly define the main subject and what they are doing.
-2.  **Environment:** Describe the setting in detail. What does it look, sound, and feel like?
-3.  **Cinematography:** Specify the camera shot (e.g., wide shot, medium shot, close-up), the camera angle (e.g., low angle, high angle, eye-level), and crucially, the **camera movement** (e.g., slow pan, dolly zoom, crane shot, aerial drone shot).
-4.  **Lighting:** Describe the lighting in cinematic terms (e.g., "warm golden hour light," "moody chiaroscuro," "the sterile blue glow of futuristic neon signs").
-5.  **Mood & Style:** Define the overall feeling (e.g., epic, serene, suspenseful, nostalgic) and the visual style (e.g., cinematic, hyper-realistic, documentary footage, vintage film).
-6.  **Weave it Together:** Combine all these elements into a single, compelling paragraph. Do not use lists or bullet points.
+**MANDATORY PROCESS:**
+1.  **Scene & Action:** Clearly define the subject and the specific action occurring in the shot.
+2.  **Environment:** Describe the setting with vivid sensory details. What does it look, sound, and feel like?
+3.  **Expert Cinematography:** This is the most critical step.
+    *   **Camera Shot:** Specify the shot type (e.g., Extreme Wide Shot, Cowboy Shot, Medium Close-Up, Macro Shot).
+    *   **Camera Movement:** Define a precise camera movement. Examples: "a slow, dramatic dolly push-in," "a sweeping crane shot revealing the landscape," "a fast-paced tracking shot following the action," "an elegant aerial drone shot orbiting the subject."
+    *   **Lens & Style:** Mention lens characteristics (e.g., "shot on a wide-angle anamorphic lens creating cinematic flares," "telephoto lens compressing the background"). Define the visual style (e.g., "hyper-realistic," "found-footage style," "dreamlike and ethereal").
+4.  **Professional Lighting:** Describe the lighting in cinematic terms (e.g., "moody chiaroscuro creating high contrast," "soft, diffused magic hour light," "harsh, direct overhead sunlight").
+5.  **Color Grading:** Briefly mention the color palette (e.g., "a modern teal and orange color grade," "a desaturated, gritty color palette," "vibrant, saturated colors").
+6.  **Synthesize:** Weave all elements into one cohesive, compelling paragraph. **Do not use lists or bullet points.**
 
-**Response Requirements:**
+**UNBREAKABLE RULES:**
 *   Respond ONLY with the final, enhanced prompt paragraph.
 *   Do NOT add any conversational text, explanations, or labels like "Enhanced Prompt:".
 
@@ -227,6 +229,40 @@ export async function refineVideoPrompt(prompt: string): Promise<string> {
         return refined || prompt; 
     } catch (error) {
         console.error("Error refining video prompt, falling back to original:", error);
+        return prompt;
+    }
+}
+
+export async function refineAnimationPrompt(prompt: string): Promise<string> {
+    const refinementPrompt = `You are an expert animator and visual effects artist, creating a prompt for an AI that generates a video from a still image. Your task is to take a user's simple animation instruction and elevate it into a single, rich, descriptive paragraph.
+
+**Your Process:**
+1.  **Analyze the Action:** What is the core motion requested? (e.g., rain, snow, zoom, pan, character movement).
+2.  **Describe the Motion:** Detail the animation. Is the rain gentle or a downpour? Is the pan slow or fast?
+3.  **Add Environmental Effects:** Describe how the animation affects the scene. Rain creates wet surfaces and ripples. Wind rustles leaves.
+4.  **Consider Camera Movement:** Suggest a subtle camera move that enhances the animation (e.g., "a slow dolly forward," "a gentle pan to the right").
+5.  **Lighting & Atmosphere:** How does the animation change the mood? Does it become darker, brighter, more magical?
+6.  **Weave it Together:** Combine these into a single, compelling descriptive paragraph. Do not use lists or bullet points.
+
+**Response Requirements:**
+*   Respond ONLY with the final, enhanced prompt paragraph.
+*   Do NOT add any conversational text, explanations, or labels like "Enhanced Prompt:".
+
+**User's Idea:** "${prompt}"`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: refinementPrompt,
+            config: {
+                thinkingConfig: { thinkingBudget: 0 },
+            }
+        });
+        
+        const refined = response.text.replace(/"/g, '').trim();
+        return refined || prompt; 
+    } catch (error) {
+        console.error("Error refining animation prompt, falling back to original:", error);
         return prompt;
     }
 }
