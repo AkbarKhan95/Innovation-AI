@@ -36,6 +36,7 @@ import ImageIcon from './components/icons/ImageIcon';
 import DownloadIcon from './components/icons/DownloadIcon';
 import AddToBoardIcon from './components/icons/AddToBoardIcon';
 import PencilIcon from './components/icons/PencilIcon';
+import ImageGenerationPlaceholder from './components/ImageGenerationPlaceholder';
 
 // Hooks
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -114,6 +115,7 @@ const getFriendlyErrorMessage = (error: unknown): string => {
     return 'An unknown error occurred.';
 };
 
+const imageLoadingMessages = ["🎨 Sketching your idea...", "🖌️ Applying color palette...", "✨ Adding final details...", "🖼️ Rendering your image..."];
 const videoLoadingMessages = ["🎬 Directing your scene...", "💡 Adjusting the lighting...", "🎥 Camera is rolling...", "🎞️ Rendering the final cut... this can take a few minutes."];
 
 
@@ -140,6 +142,7 @@ const App: React.FC = () => {
     const [editText, setEditText] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
+    const [imageLoadingMessage, setImageLoadingMessage] = useState('');
 
 
     // Refs
@@ -157,6 +160,7 @@ const App: React.FC = () => {
     // Derived State
     const currentSession = chatSessions.find(s => s.id === currentSessionId);
     const lastAiMessage = [...(currentSession?.messages ?? [])].reverse().find(m => m.sender === 'ai');
+    const isAnyImageLoading = currentSession?.messages.some(m => m.loading === 'image') ?? false;
     const isAnyVideoLoading = currentSession?.messages.some(m => m.loading === 'video') ?? false;
     
     // Effects
@@ -228,6 +232,30 @@ const App: React.FC = () => {
             }
         };
     }, [isAnyVideoLoading]);
+
+     // Effect for cycling image loading messages
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        
+        if (isAnyImageLoading) {
+            let messageIndex = 0;
+            setImageLoadingMessage(imageLoadingMessages[0]);
+            
+            intervalId = setInterval(() => {
+                messageIndex = (messageIndex + 1) % imageLoadingMessages.length;
+                setImageLoadingMessage(imageLoadingMessages[messageIndex]);
+            }, 2500);
+        } else {
+             setImageLoadingMessage('');
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [isAnyImageLoading]);
+
 
     // Auto-resize textarea
     useEffect(() => {
@@ -841,34 +869,40 @@ const App: React.FC = () => {
                                                             }
                                                         `}>
                                                             <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'prose-invert' : 'dark:prose-invert'}`}>
-                                                                {msg.loading === 'video' ? (
+                                                                <MessageContent text={msg.text} isStreaming={isStreaming} />
+
+                                                                {msg.file && msg.sender === 'user' && (
+                                                                    <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
+                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
+                                                                        <span className="text-sm truncate">{msg.file.name}</span>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {msg.loading === 'image' && (
+                                                                    <div className="mt-2">
+                                                                        <ImageGenerationPlaceholder message={imageLoadingMessage} />
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {msg.loading === 'video' && (
                                                                     <div className="flex flex-col items-center justify-center p-2 text-center">
                                                                         <p className="text-text-secondary text-sm mb-2 animate-fade-in">{videoLoadingMessage}</p>
                                                                         <LoadingSpinner />
                                                                     </div>
-                                                                ) : msg.loading ? (
-                                                                    <LoadingSpinner />
-                                                                ) : (
-                                                                    <MessageContent text={msg.text} isStreaming={isStreaming} />
                                                                 )}
+
                                                                 {msg.imageUrl && (
                                                                      <div className="mt-2 relative">
-                                                                        {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
                                                                         <img src={msg.imageUrl} alt="Generated content" className="rounded-lg w-full h-auto" />
                                                                         <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.jpg`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
                                                                 )}
+                                                                
                                                                 {msg.videoUrl && (
                                                                      <div className="mt-2 relative">
                                                                         <video src={msg.videoUrl} controls className="rounded-lg w-full h-auto"></video>
                                                                         <a href={msg.videoUrl} download={`innovation-ai-video-${msg.id}.mp4`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
-                                                                )}
-                                                                 {msg.file && msg.sender === 'user' && (
-                                                                    <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
-                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
-                                                                        <span className="text-sm truncate">{msg.file.name}</span>
-                                                                    </div>
                                                                 )}
                                                             </div>
                                                             {msg.sender === 'ai' && msg.groundingChunks && msg.groundingChunks.length > 0 && <GroundingSources chunks={msg.groundingChunks} />}
