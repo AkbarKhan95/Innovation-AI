@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { AIModel, Topic } from '../types';
 import { AVAILABLE_MODELS, TOPICS } from '../constants';
@@ -7,17 +8,21 @@ import BotIcon from './icons/BotIcon';
 interface ModelSelectorProps {
     onSelectModel: (modelId: AIModel['id']) => void;
     onPromptWithTopic: (topic: Topic) => void;
+    onOpenAbout: () => void;
 }
 
-const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onPromptWithTopic }) => {
+const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onPromptWithTopic, onOpenAbout }) => {
     return (
         <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center overflow-y-auto">
             <div className="w-full max-w-4xl mx-auto flex flex-col items-center pt-16 md:pt-12">
                 <BotIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-300 dark:text-gray-600 mb-4" />
                 <h2 className="text-2xl md:text-3xl font-bold mb-3 text-text-primary">Welcome to Innovation AI</h2>
-                <p className="text-text-secondary mb-12 max-w-lg">
+                <p className="text-text-secondary mb-4 max-w-lg">
                     Begin by selecting a powerful model, or kickstart your creative process with one of our innovation-focused topics.
                 </p>
+                <button onClick={onOpenAbout} className="text-sm text-blue-500 hover:underline mb-12">
+                    Learn more about the app's features
+                </button>
 
                 {/* Model Selection Cards */}
                 <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

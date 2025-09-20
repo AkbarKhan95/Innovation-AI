@@ -1,4 +1,5 @@
 
+
 const CACHE_NAME = 'innovation-ai-cache-v1';
 // This list includes all local assets and key CDN dependencies for offline-first functionality.
 const urlsToCache = [
@@ -18,6 +19,8 @@ const urlsToCache = [
   '/components/ModelSelector.tsx',
   '/components/GroundingSources.tsx',
   '/components/Greeting.tsx',
+  '/components/TermsModal.tsx',
+  '/components/AboutModal.tsx',
   '/components/icons/ArrowLeftIcon.tsx',
   '/components/icons/BotIcon.tsx',
   '/components/icons/CheckIcon.tsx',

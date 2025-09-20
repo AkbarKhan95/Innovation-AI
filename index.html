@@ -1,3 +1,14 @@
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
+  }
+}
+</script>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -31,6 +42,8 @@
         --bg-tertiary: #374151; /* gray-700 */
         --bg-tertiary-hover: #4b5563; /* gray-600 */
         --bg-input: #1f2937; /* gray-800 */
+        --bg-accent: #3b82f6; /* blue-500 */
+        --bg-accent-hover: #2563eb; /* blue-600 */
         --bg-accent-disabled: #1e40af; /* blue-800 */
         --text-primary: #f9fafb; /* gray-50 */
         --text-secondary: #9ca3af; /* gray-400 */
@@ -45,6 +58,8 @@
         --bg-tertiary: #1f1f1f;
         --bg-tertiary-hover: #333333;
         --bg-input: #1f1f1f;
+        --bg-accent: #3b82f6; /* blue-500 */
+        --bg-accent-hover: #2563eb; /* blue-600 */
         --bg-accent-disabled: #1e40af; /* blue-800 */
         --text-primary: #e5e5e5;
         --text-secondary: #a3a3a3;
@@ -56,268 +71,295 @@
       [data-theme="gradient"] {
         --bg-primary-gradient: linear-gradient(135deg, #000428 0%, #004e92 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(10, 25, 47, 0.75); /* Glassmorphism effect */
-        --bg-tertiary: rgba(23, 58, 94, 0.75);
-        --bg-tertiary-hover: rgba(34, 87, 140, 0.85);
-        --bg-input: rgba(10, 25, 47, 0.75);
-        --bg-accent: #3b82f6; /* blue-500 */
-        --bg-accent-hover: #2563eb; /* blue-600 */
-        --bg-accent-disabled: #1e3a8a; /* blue-800 */
-        --text-primary: #f0f8ff; /* AliceBlue */
-        --text-secondary: #93c5fd; /* blue-300 */
-        --border-primary: #004e92;
-        --border-secondary: #0077b6;
-        --scrollbar-thumb: #60a5fa; /* blue-400 */
-        --modal-backdrop: rgba(0, 4, 40, 0.7);
+        --bg-secondary: rgba(255, 255, 255, 0.1);
+        --bg-tertiary: rgba(255, 255, 255, 0.15);
+        --bg-tertiary-hover: rgba(255, 255, 255, 0.2);
+        --bg-input: rgba(255, 255, 255, 0.1);
+        --bg-accent: #3b82f6;
+        --bg-accent-hover: #2563eb;
+        --bg-accent-disabled: #1e40af;
+        --text-primary: #f9fafb;
+        --text-secondary: #d1d5db;
+        --text-on-accent: #ffffff;
+        --border-primary: rgba(255, 255, 255, 0.2);
+        --border-secondary: rgba(255, 255, 255, 0.3);
+        --scrollbar-thumb: #718096;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
       [data-theme="starlight"] {
-        --bg-primary-gradient: linear-gradient(160deg, #0b192f 0%, #172a45 100%);
+        --bg-primary-gradient: linear-gradient(160deg, #020420 0%, #0b192f 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(23, 42, 69, 0.7);
-        --bg-tertiary: rgba(33, 52, 89, 0.7);
-        --bg-tertiary-hover: rgba(43, 62, 99, 0.8);
-        --bg-input: rgba(23, 42, 69, 0.7);
-        --bg-accent: #64ffda;
-        --bg-accent-hover: #52e9c9;
-        --bg-accent-disabled: #1d3b59;
-        --text-primary: #ccd6f6;
-        --text-secondary: #8892b0;
-        --text-on-accent: #0a192f;
-        --border-primary: #172a45;
-        --border-secondary: #303c55;
-        --scrollbar-thumb: #8892b0;
-        --modal-backdrop: rgba(10, 25, 47, 0.7);
+        --bg-secondary: #111c32;
+        --bg-tertiary: #1e293b;
+        --bg-tertiary-hover: #334155;
+        --bg-input: #111c32;
+        --bg-accent: #67e8f9;
+        --bg-accent-hover: #22d3ee;
+        --bg-accent-disabled: #0e7490;
+        --text-primary: #e5e7eb;
+        --text-secondary: #9ca3af;
+        --text-on-accent: #0e7490;
+        --border-primary: #334155;
+        --border-secondary: #475569;
+        --scrollbar-thumb: #4b5563;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
       [data-theme="aurora"] {
-        --bg-primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%); /* indigo-950 to violet-900 */
+        --bg-primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #5b21b6 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(55, 48, 163, 0.4); /* indigo-800 with alpha */
-        --bg-tertiary: rgba(55, 48, 163, 0.5);
-        --bg-tertiary-hover: rgba(55, 48, 163, 0.6);
-        --bg-input: rgba(55, 48, 163, 0.4);
-        --bg-accent: #8b5cf6; /* violet-500 */
-        --bg-accent-hover: #7c3aed; /* violet-600 */
-        --bg-accent-disabled: #4c1d95; /* violet-900 */
-        --text-primary: #e0e7ff; /* indigo-100 */
-        --text-secondary: #a5b4fc; /* indigo-300 */
-        --text-on-accent: #ffffff;
-        --border-primary: #3730a3; /* indigo-800 */
-        --border-secondary: #4338ca; /* indigo-700 */
-        --scrollbar-thumb: #8b5cf6; /* violet-500 */
-        --modal-backdrop: rgba(30, 27, 75, 0.7);
+        --bg-secondary: rgba(29, 39, 58, 0.6);
+        --bg-tertiary: rgba(42, 53, 75, 0.6);
+        --bg-tertiary-hover: rgba(57, 71, 98, 0.6);
+        --bg-input: rgba(29, 39, 58, 0.8);
+        --bg-accent: #34d399;
+        --bg-accent-hover: #10b981;
+        --bg-accent-disabled: #047857;
+        --text-primary: #f5f3ff;
+        --text-secondary: #a3a3a3;
+        --text-on-accent: #064e3b;
+        --border-primary: rgba(124, 58, 237, 0.4);
+        --border-secondary: rgba(139, 92, 246, 0.4);
+        --scrollbar-thumb: #6d28d9;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
       [data-theme="dusk"] {
-        --bg-primary-gradient: linear-gradient(135deg, #3a0ca3 0%, #f72585 100%);
+        --bg-primary-gradient: linear-gradient(135deg, #3a0ca3 0%, #b5179e 50%, #f72585 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(45, 23, 85, 0.7);
-        --bg-tertiary: rgba(60, 35, 105, 0.7);
-        --bg-tertiary-hover: rgba(75, 45, 125, 0.8);
-        --bg-input: rgba(45, 23, 85, 0.7);
+        --bg-secondary: rgba(30, 26, 60, 0.5);
+        --bg-tertiary: rgba(45, 39, 80, 0.5);
+        --bg-tertiary-hover: rgba(60, 52, 100, 0.5);
+        --bg-input: rgba(30, 26, 60, 0.7);
         --bg-accent: #f72585;
-        --bg-accent-hover: #d91b6f;
-        --bg-accent-disabled: #4a0e4e;
-        --text-primary: #f0e6ff;
-        --text-secondary: #d3b3ff;
+        --bg-accent-hover: #d61a7a;
+        --bg-accent-disabled: #7209b7;
+        --text-primary: #ffffff;
+        --text-secondary: #e9d5ff;
         --text-on-accent: #ffffff;
-        --border-primary: #f72585;
-        --border-secondary: #b5179e;
-        --scrollbar-thumb: #f72585;
-        --modal-backdrop: rgba(25, 10, 50, 0.7);
+        --border-primary: rgba(247, 37, 133, 0.3);
+        --border-secondary: rgba(247, 37, 133, 0.4);
+        --scrollbar-thumb: #b5179e;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
       [data-theme="forest"] {
         --bg-primary-gradient: linear-gradient(135deg, #001510 0%, #134e4a 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(0, 21, 16, 0.7);
-        --bg-tertiary: rgba(10, 40, 35, 0.7);
-        --bg-tertiary-hover: rgba(20, 55, 50, 0.8);
-        --bg-input: rgba(0, 21, 16, 0.7);
+        --bg-secondary: rgba(2, 44, 34, 0.6);
+        --bg-tertiary: rgba(6, 78, 59, 0.6);
+        --bg-tertiary-hover: rgba(5, 150, 105, 0.3);
+        --bg-input: rgba(2, 44, 34, 0.8);
         --bg-accent: #34d399;
         --bg-accent-hover: #10b981;
-        --bg-accent-disabled: #064e3b;
-        --text-primary: #ecfdf5;
+        --bg-accent-disabled: #047857;
+        --text-primary: #d1fae5;
         --text-secondary: #a7f3d0;
         --text-on-accent: #064e3b;
-        --border-primary: #134e4a;
-        --border-secondary: #047857;
-        --scrollbar-thumb: #34d399;
-        --modal-backdrop: rgba(0, 21, 16, 0.7);
+        --border-primary: rgba(16, 185, 129, 0.3);
+        --border-secondary: rgba(16, 185, 129, 0.4);
+        --scrollbar-thumb: #065f46;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
       [data-theme="crimson"] {
         --bg-primary-gradient: linear-gradient(135deg, #000000 0%, #1a2a6c 50%, #b21f1f 100%);
         --bg-primary: transparent;
-        --bg-secondary: rgba(10, 10, 30, 0.7);
-        --bg-tertiary: rgba(25, 25, 50, 0.7);
-        --bg-tertiary-hover: rgba(40, 40, 70, 0.8);
-        --bg-input: rgba(10, 10, 30, 0.7);
-        --bg-accent: #e11d48;
-        --bg-accent-hover: #be123c;
-        --bg-accent-disabled: #581c87;
-        --text-primary: #e0e7ff;
-        --text-secondary: #93c5fd;
+        --bg-secondary: rgba(20, 20, 25, 0.5);
+        --bg-tertiary: rgba(40, 40, 45, 0.5);
+        --bg-tertiary-hover: rgba(60, 60, 65, 0.5);
+        --bg-input: rgba(0, 0, 0, 0.6);
+        --bg-accent: #ef4444;
+        --bg-accent-hover: #dc2626;
+        --bg-accent-disabled: #991b1b;
+        --text-primary: #fef2f2;
+        --text-secondary: #d1d5db;
         --text-on-accent: #ffffff;
-        --border-primary: #b21f1f;
-        --border-secondary: #1a2a6c;
-        --scrollbar-thumb: #e11d48;
-        --modal-backdrop: rgba(10, 10, 30, 0.7);
+        --border-primary: rgba(239, 68, 68, 0.4);
+        --border-secondary: rgba(239, 68, 68, 0.5);
+        --scrollbar-thumb: #1a2a6c;
+        --modal-backdrop: rgba(0, 0, 0, 0.6);
       }
 
-      /* Apply gradient background only for the gradient themes */
-      html[data-theme="gradient"],
-      html[data-theme="starlight"],
-      html[data-theme="aurora"],
-      html[data-theme="dusk"],
-      html[data-theme="forest"],
-      html[data-theme="crimson"] {
+      /* Custom Utility Classes for Theming */
+      .bg-bg-primary { background-color: var(--bg-primary); }
+      .bg-bg-secondary { background-color: var(--bg-secondary); }
+      .bg-bg-tertiary { background-color: var(--bg-tertiary); }
+      .bg-bg-input { background-color: var(--bg-input); }
+      .bg-bg-accent { background-color: var(--bg-accent); }
+      .bg-modal-backdrop { background-color: var(--modal-backdrop); }
+      
+      .text-text-primary { color: var(--text-primary); }
+      .text-text-secondary { color: var(--text-secondary); }
+      .text-text-on-accent { color: var(--text-on-accent); }
+
+      .border-border-primary { border-color: var(--border-primary); }
+      .border-border-secondary { border-color: var(--border-secondary); }
+
+      .hover\:bg-bg-tertiary:hover { background-color: var(--bg-tertiary); }
+      .hover\:bg-bg-tertiary-hover:hover { background-color: var(--bg-tertiary-hover); }
+      .hover\:bg-bg-accent-hover:hover { background-color: var(--bg-accent-hover); }
+      .hover\:text-text-primary:hover { color: var(--text-primary); }
+      .hover\:border-border-secondary:hover { border-color: var(--border-secondary); }
+
+      .disabled\:bg-bg-accent-disabled:disabled { background-color: var(--bg-accent-disabled); }
+
+      /* Base prose styles that are theme-aware */
+      :root .prose, [data-theme] .prose {
+          --tw-prose-body: var(--text-primary);
+          --tw-prose-headings: var(--text-primary);
+          --tw-prose-bold: var(--text-primary);
+          --tw-prose-links: #3b82f6;
+          --tw-prose-quotes: var(--text-primary);
+          --tw-prose-quote-borders: var(--border-primary);
+          --tw-prose-counters: var(--text-secondary);
+          --tw-prose-bullets: var(--border-secondary);
+          --tw-prose-hr: var(--border-primary);
+          --tw-prose-captions: var(--text-secondary);
+          --tw-prose-code: var(--bg-accent);
+          --tw-prose-pre-code: var(--text-secondary);
+          --tw-prose-pre-bg: rgba(0,0,0,0.2);
+          --tw-prose-th-borders: var(--border-secondary);
+          --tw-prose-td-borders: var(--border-primary);
+      }
+      
+      /* Use Tailwind's standard `prose-invert` for content on dark backgrounds */
+      :root .prose-invert, [data-theme] .prose-invert {
+          --tw-prose-body: var(--text-on-accent);
+          --tw-prose-headings: var(--text-on-accent);
+          --tw-prose-bold: var(--text-on-accent);
+          --tw-prose-links: #93c5fd; /* A lighter blue for links on dark bg */
+          --tw-prose-quotes: var(--text-on-accent);
+          --tw-prose-bullets: rgba(255,255,255,0.5);
+          --tw-prose-hr: rgba(255,255,255,0.2);
+          --tw-prose-code: var(--text-on-accent);
+          --tw-prose-pre-code: var(--text-on-accent);
+          --tw-prose-pre-bg: rgba(255,255,255,0.1);
+      }
+      
+      /* Custom Prose Enhancements for Presentation */
+      .prose h1, .prose h2, .prose h3, .prose h4 {
+        font-weight: 800; /* Extra-bold for more impact */
+      }
+      .prose h1 {
+        font-size: 1.6em;
+        margin-bottom: 1em;
+      }
+      .prose h2 {
+        font-size: 1.35em;
+        margin-top: 2.5em; /* More space before section headings */
+        margin-bottom: 1.25em; /* Increased bottom margin for spacing */
+        padding-bottom: 0.5em;
+        border-bottom: 1px solid var(--border-primary);
+      }
+      .prose h3 {
+        font-size: 1.15em;
+        margin-top: 2em; /* Space before sub-headings */
+        margin-bottom: 1em; /* Increased bottom margin */
+      }
+      .prose p, .prose ol, .prose ul {
+        line-height: 1.75;
+      }
+      /* Add extra space between list items for better readability */
+      .prose ul, .prose ol {
+        padding-left: 1.5rem; /* Indent lists properly */
+      }
+      .prose ul li, .prose ol li {
+          margin-top: 0.75em; /* Increased spacing between list items */
+          padding-left: 0.25em; /* Space between marker and text */
+      }
+      /* Style list markers to be more prominent */
+      .prose ul li::marker, .prose ol li::marker {
+          color: var(--bg-accent);
+          font-weight: 600;
+      }
+      /* Ensure paragraphs following headings have some space (now handled by heading margin-bottom) */
+      .prose h1 + p, .prose h2 + p, .prose h3 + p {
+          margin-top: 0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      /* Add a smooth transition to common elements for theme changes */
+      .bg-bg-primary, .bg-bg-secondary, .bg-bg-tertiary, .bg-bg-input, .bg-bg-accent, 
+      .text-text-primary, .text-text-secondary, .text-text-on-accent,
+      .border-border-primary, .border-border-secondary,
+      button, input, textarea, .prose {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      }
+
+      svg {
+        transition: fill 0.3s ease, stroke 0.3s ease;
+      }
+      
+      body.theme-gradient {
         background-image: var(--bg-primary-gradient);
+        background-attachment: fixed;
       }
 
-      /* Custom styles for translucent sidebar on specific themes */
-      @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-        html[data-theme="gradient"] .sidebar,
-        html[data-theme="starlight"] .sidebar,
-        html[data-theme="aurora"] .sidebar,
-        html[data-theme="dusk"] .sidebar,
-        html[data-theme="forest"] .sidebar,
-        html[data-theme="crimson"] .sidebar {
-          background-color: rgba(30, 41, 59, 0.5); /* slate-800 @ 50% opacity */
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-      }
-
-      /* Translucent mobile sidebar for all themes */
-      @media (max-width: 767px) {
-        @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-          .sidebar {
-            background-color: rgba(255, 255, 255, 0.25) !important;
-            border-right-color: rgba(255, 255, 255, 0.35) !important;
-            -webkit-backdrop-filter: blur(24px);
-            backdrop-filter: blur(24px);
-          }
-        }
-      }
-
-      /* Add a universal transition for smooth theme changes */
-      *,
-      *::before,
-      *::after {
-        transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out;
-      }
-
-      /* For custom scrollbars */
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 4px; }
 
-      /* Hide scrollbar for specific elements */
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
-      }
+      /* Animation keyframes */
+      @keyframes wave { 0%, 60%, 100% { transform: initial; } 30% { transform: translateY(-8px); } }
+      .animate-wave { animation: wave 1.2s infinite ease-in-out; }
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+      @keyframes slide-in-bottom { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .animate-slide-in-bottom { animation: slide-in-bottom 0.3s ease-out forwards; }
+      @keyframes bubble-in { from { transform: scale(0.9) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+      .animate-bubble-in { animation: bubble-in 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+      @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+      .animate-float { animation: float 6s ease-in-out infinite; }
     </style>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'bg-primary': 'var(--bg-primary)',
-              'bg-secondary': 'var(--bg-secondary)',
-              'bg-tertiary': 'var(--bg-tertiary)',
-              'bg-tertiary-hover': 'var(--bg-tertiary-hover)',
-              'bg-input': 'var(--bg-input)',
-              'bg-accent': 'var(--bg-accent)',
-              'bg-accent-hover': 'var(--bg-accent-hover)',
-              'bg-accent-disabled': 'var(--bg-accent-disabled)',
-              'text-primary': 'var(--text-primary)',
-              'text-secondary': 'var(--text-secondary)',
-              'text-on-accent': 'var(--text-on-accent)',
-              'border-primary': 'var(--border-primary)',
-              'border-secondary': 'var(--border-secondary)',
-              'modal-backdrop': 'var(--modal-backdrop)',
-            },
-             animation: {
-              'fade-in': 'fadeIn 0.3s ease-out forwards',
-              'bubble-in': 'bubbleIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
-              'slide-in-bottom': 'slideInBottom 0.3s ease-out forwards',
-              'wave': 'wave 1.4s ease-in-out infinite',
-              'dot-pulse': 'dotPulse 1.5s infinite ease-in-out',
-            },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: 0, transform: 'translateY(-10px)' },
-                '100%': { opacity: 1, transform: 'translateY(0)' },
-              },
-              bubbleIn: {
-                '0%': { opacity: 0, transform: 'translateY(20px) scale(0.9)' },
-                '100%': { opacity: 1, transform: 'translateY(0) scale(1)' },
-              },
-              slideInBottom: {
-                '0%': { opacity: 0, transform: 'translateY(15px)' },
-                '100%': { opacity: 1, transform: 'translateY(0)' },
-              },
-              wave: {
-                '0%, 100%': {
-                  transform: 'scale(0.7) translateY(0)',
-                  opacity: '0.7',
-                },
-                '50%': {
-                  transform: 'scale(1) translateY(-6px)',
-                  opacity: '1',
-                },
-              },
-              dotPulse: {
-                '0%, 100%': { opacity: '0.3', transform: 'scale(0.7) translateY(0px)' },
-                '50%': { opacity: '1', transform: 'scale(1) translateY(-3px)' },
-              },
-            }
-          }
-        }
-      }
-    </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.1.1/client",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
-  }
-}
-</script>
-</head>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  </head>
   <body>
-    <script>
-      // Prevent FOUC (Flash of Unstyled Content) for theme
-      (function() {
-        const theme = localStorage.getItem('theme');
-        const validThemes = ['light', 'dark', 'midnight', 'gradient', 'starlight', 'aurora', 'dusk', 'forest', 'crimson'];
-        if (theme && validThemes.includes(theme)) {
-          document.documentElement.setAttribute('data-theme', theme);
-        } else {
-          // Default to light for new users or if theme is invalid/missing
-          document.documentElement.setAttribute('data-theme', 'light');
-        }
-        // Clean up old class-based themeing if present
-        document.documentElement.classList.remove('dark');
-      })();
-    </script>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
     <script>
+      // Service Worker registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Register the service worker. The path is relative to the origin.
           navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('Service Worker registered: ', registration);
+            console.log('SW registered: ', registration);
           }).catch(registrationError => {
-            console.log('Service Worker registration failed: ', registrationError);
+            console.log('SW registration failed: ', registrationError);
           });
         });
       }
+
+      // Logic to apply gradient background class to body
+      const applyThemeClass = (theme) => {
+        if (['gradient', 'starlight', 'aurora', 'dusk', 'forest', 'crimson'].includes(theme)) {
+          document.body.classList.add('theme-gradient');
+        } else {
+          document.body.classList.remove('theme-gradient');
+        }
+      };
+
+      // Apply theme on initial load
+      const storedTheme = localStorage.getItem('theme');
+      if (storedTheme) {
+        document.documentElement.setAttribute('data-theme', storedTheme);
+        applyThemeClass(storedTheme);
+      }
+      
+      // Observe theme changes and apply body class accordingly
+      const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+            const newTheme = (mutation.target).getAttribute('data-theme');
+            applyThemeClass(newTheme);
+          }
+        }
+      });
+      observer.observe(document.documentElement, { attributes: true });
+
     </script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

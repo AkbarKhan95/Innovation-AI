@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { ChatSession, User, Theme, VoiceOption } from '../types';
 import CheckIcon from './icons/CheckIcon';
 import NewBotIcon from './icons/NewBotIcon';
 import NewFemaleIcon from './icons/NewFemaleIcon';
 import NewMaleIcon from './icons/NewMaleIcon';
 import XIcon from './icons/XIcon';
+import PencilIcon from './icons/PencilIcon';
 
 
 interface DashboardProps {
@@ -17,6 +18,7 @@ interface DashboardProps {
   setVoice: (voice: VoiceOption, sampleText: string) => void;
   handleClearHistory: () => void;
   user: User;
+  onUpdateUserPicture: (picture: string) => void;
 }
 
 const themes = [
@@ -39,12 +41,13 @@ const voiceOptions = [
 ] as const;
 
 
-const Dashboard: React.FC<DashboardProps> = ({ isOpen, onClose, chatSessions, theme, setTheme, voice, setVoice, handleClearHistory, user }) => {
+const Dashboard: React.FC<DashboardProps> = ({ isOpen, onClose, chatSessions, theme, setTheme, voice, setVoice, handleClearHistory, user, onUpdateUserPicture }) => {
   const totalChats = chatSessions.length;
   const totalMessages = chatSessions.reduce((acc, session) => 
     acc + session.messages.filter(msg => msg.sender !== 'system').length, 
     0
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!isOpen) return null;
   
@@ -57,6 +60,31 @@ const Dashboard: React.FC<DashboardProps> = ({ isOpen, onClose, chatSessions, th
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   };
+
+  const handleEditPictureClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_SIZE) {
+        alert('File is too large. Please select an image under 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        onUpdateUserPicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const Card: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
     <div className={`bg-bg-tertiary rounded-xl p-6 ${className}`}>
@@ -80,8 +108,28 @@ const Dashboard: React.FC<DashboardProps> = ({ isOpen, onClose, chatSessions, th
                   {/* Profile Card */}
                   <Card title="Profile">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-20 h-20 bg-bg-tertiary rounded-full flex items-center justify-center mb-4">
-                          <span className="text-4xl font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
+                        <div className="relative group w-20 h-20 mb-4">
+                            {user.picture ? (
+                                <img src={user.picture} alt={user.name} className="w-20 h-20 rounded-full object-cover" />
+                            ) : (
+                                <div className="w-20 h-20 bg-bg-tertiary rounded-full flex items-center justify-center">
+                                    <span className="text-4xl font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                            )}
+                            <button
+                                onClick={handleEditPictureClick}
+                                className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-bg-secondary"
+                                aria-label="Change profile picture"
+                            >
+                                <PencilIcon className="w-8 h-8" />
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/gif, image/webp"
+                            />
                         </div>
                         <p className="text-xl font-bold text-text-primary">Welcome, {user.name}!</p>
                         <p className="text-sm text-text-secondary">{user.email}</p>

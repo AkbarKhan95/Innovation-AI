@@ -50,9 +50,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, isCollapsed, onLogout, onOpen
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center gap-3 p-2 rounded-lg group text-left hover:bg-bg-tertiary-hover transition-colors ${isCollapsed ? 'justify-center' : ''}`}
             >
-                <div className="w-10 h-10 bg-bg-tertiary rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
-                </div>
+                {user.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
+                ) : (
+                    <div className="w-10 h-10 bg-bg-tertiary rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                )}
                 <div className={`flex-1 overflow-hidden ${isCollapsed ? 'md:hidden' : ''}`}>
                     <p className={`truncate font-bold text-text-primary`}>{user.name}</p>
                     <p className={`truncate text-xs text-text-secondary`}>{user.email}</p>

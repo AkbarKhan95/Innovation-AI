@@ -20,7 +20,7 @@ export interface Message {
     size?: number;
   };
   groundingChunks?: GroundingChunk[];
-  loading?: 'image' | 'video' | false;
+  loading?: 'image' | 'video' | 'text' | false;
 }
 
 export interface BoardNode {
@@ -51,6 +51,7 @@ export interface ChatSession {
   messages: Message[];
   modelId?: AIModel['id'];
   board?: BrainstormBoard;
+  isLoading?: boolean;
 }
 
 export interface Topic {

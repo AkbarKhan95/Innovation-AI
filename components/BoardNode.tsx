@@ -17,29 +17,45 @@ interface BoardNodeProps {
 
 const colors = ['bg-yellow-200', 'bg-blue-200', 'bg-green-200', 'bg-pink-200', 'bg-purple-200'];
 
+const calculateWidth = (content: string) => {
+    const charCount = content.length;
+    const baseWidth = 192; // 12rem
+    const maxWidth = 320; // 20rem
+    
+    // A simple linear scale to increase width with content, but capped.
+    let calculatedWidth = baseWidth + charCount * 0.4; 
+    
+    return Math.min(Math.max(calculatedWidth, baseWidth), maxWidth);
+};
+
 const BoardNode: React.FC<BoardNodeProps> = ({ node, onMouseDown, onTouchStart, onChange, onDelete, onChangeColor, onStartConnection, onCompleteConnection }) => {
     const [isColorPickerOpen, setColorPickerOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const connectionHandleClasses = "absolute bg-gray-500 border-2 border-white dark:border-gray-800 rounded-full cursor-crosshair transition-transform hover:scale-125 w-5 h-5 z-10";
 
     useEffect(() => {
-        // Auto-resize textarea
+        // Auto-resize textarea height
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
     }, [node.content]);
 
+    const nodeStyle = {
+        left: node.position.x,
+        top: node.position.y,
+        transform: 'translate(-50%, -50%)',
+        width: `${calculateWidth(node.content)}px`,
+    };
+
     return (
         <div 
-            style={{ 
-                left: node.position.x, 
-                top: node.position.y,
-                transform: `translate(-50%, -50%)`,
-            } as React.CSSProperties}
-            className={`absolute w-56 p-3 rounded-lg shadow-xl cursor-grab select-none transition-shadow duration-200 hover:shadow-2xl text-gray-800 ${node.color}`}
+            style={nodeStyle}
+            className={`absolute p-3 rounded-lg shadow-xl cursor-grab select-none transition-shadow duration-200 hover:shadow-2xl text-gray-800 ${node.color}`}
             onMouseDown={e => onMouseDown(e, node.id)}
             onTouchStart={e => onTouchStart(e, node.id)}
             onMouseUp={e => { e.stopPropagation(); onCompleteConnection(node.id); }}
+            onTouchEnd={e => { e.stopPropagation(); onCompleteConnection(node.id); }}
         >
              <div className="absolute -top-3 -right-3 flex items-center gap-1 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <div className="relative">
@@ -82,10 +98,30 @@ const BoardNode: React.FC<BoardNodeProps> = ({ node, onMouseDown, onTouchStart, 
                 rows={1}
             />
 
-            <div 
-                className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-500 border-2 border-white dark:border-gray-800 rounded-full cursor-crosshair transition-transform hover:scale-125"
+             {/* Connection Handles */}
+            <div // Top
                 title="Drag to connect"
+                className={`${connectionHandleClasses} top-[-10px] left-1/2 -translate-x-1/2`}
                 onMouseDown={e => { e.stopPropagation(); onStartConnection(node.id); }}
+                onTouchStart={e => { e.stopPropagation(); onStartConnection(node.id); }}
+            />
+            <div // Right
+                title="Drag to connect"
+                className={`${connectionHandleClasses} right-[-10px] top-1/2 -translate-y-1/2`}
+                onMouseDown={e => { e.stopPropagation(); onStartConnection(node.id); }}
+                onTouchStart={e => { e.stopPropagation(); onStartConnection(node.id); }}
+            />
+            <div // Bottom
+                title="Drag to connect"
+                className={`${connectionHandleClasses} bottom-[-10px] left-1/2 -translate-x-1/2`}
+                onMouseDown={e => { e.stopPropagation(); onStartConnection(node.id); }}
+                onTouchStart={e => { e.stopPropagation(); onStartConnection(node.id); }}
+            />
+            <div // Left
+                title="Drag to connect"
+                className={`${connectionHandleClasses} left-[-10px] top-1/2 -translate-y-1/2`}
+                onMouseDown={e => { e.stopPropagation(); onStartConnection(node.id); }}
+                onTouchStart={e => { e.stopPropagation(); onStartConnection(node.id); }}
             />
         </div>
     );

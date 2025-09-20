@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// A more robust markdown renderer for inline elements.
+// Renders inline markdown elements like bold and code.
 const renderInlineMarkdown = (text: string) => {
   if (!text) return null;
   // Split by bold and code markdown, but keep the delimiters for processing.
@@ -16,41 +16,119 @@ const renderInlineMarkdown = (text: string) => {
   });
 };
 
+// A more robust, line-by-line markdown parser that correctly handles various block types.
+const renderFormattedText = (text: string) => {
+    if (!text) return null;
+    
+    const lines = text.split('\n');
+    const elements: React.ReactNode[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+
+        // Headings
+        if (trimmedLine.startsWith('### ')) { elements.push(<h3 key={i}>{renderInlineMarkdown(trimmedLine.substring(4))}</h3>); i++; continue; }
+        if (trimmedLine.startsWith('## ')) { elements.push(<h2 key={i}>{renderInlineMarkdown(trimmedLine.substring(3))}</h2>); i++; continue; }
+        if (trimmedLine.startsWith('# ')) { elements.push(<h1 key={i}>{renderInlineMarkdown(trimmedLine.substring(2))}</h1>); i++; continue; }
+
+        // Unordered List
+        if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+            const listItems = [];
+            // Gather all consecutive list items
+            while (i < lines.length && (lines[i].trim().startsWith('* ') || lines[i].trim().startsWith('- '))) {
+                listItems.push(lines[i].trim().substring(2));
+                i++;
+            }
+            elements.push(<ul key={`ul-${i}`}>{listItems.map((item, idx) => <li key={idx}>{renderInlineMarkdown(item)}</li>)}</ul>);
+            continue;
+        }
+
+        // Ordered List
+        if (/^\d+\.\s/.test(trimmedLine)) {
+            const listItems = [];
+            while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+                listItems.push(lines[i].trim().replace(/^\d+\.\s/, ''));
+                i++;
+            }
+            elements.push(<ol key={`ol-${i}`}>{listItems.map((item, idx) => <li key={idx}>{renderInlineMarkdown(item)}</li>)}</ol>);
+            continue;
+        }
+        
+        // Empty lines are treated as breaks between elements
+        if (trimmedLine === '') {
+            i++;
+            continue;
+        }
+
+        // Default to Paragraph: Group consecutive non-empty, non-block lines.
+        const paraLines: string[] = [];
+        while (i < lines.length && lines[i].trim() !== '') {
+            const currentLineTrimmed = lines[i].trim();
+            // Break if we hit a new block type
+            if (/^(#|(\*|-)\s|\d+\.\s)/.test(currentLineTrimmed)) {
+                break;
+            }
+            paraLines.push(lines[i]);
+            i++;
+        }
+
+        if (paraLines.length > 0) {
+            // Join with space for soft line breaks within a paragraph
+            elements.push(<p key={`p-${i}`}>{renderInlineMarkdown(paraLines.join(' '))}</p>);
+        }
+    }
+
+    return <>{elements}</>;
+};
+
+
 const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming = false }) => {
   const [displayedText, setDisplayedText] = useState('');
   const animationFrameId = useRef<number | null>(null);
   const textRef = useRef(text);
   textRef.current = text;
 
-  // Word-by-word streaming animation effect.
+  // Character-by-character streaming animation effect.
   useEffect(() => {
     if (!isStreaming) {
-      if (animationFrameId.current) clearTimeout(animationFrameId.current);
+      if (animationFrameId.current) {
+        clearTimeout(animationFrameId.current);
+      }
       setDisplayedText(text);
       return;
     }
-    
+
+    // Handle stream resets (e.g., regeneration)
     if (displayedText && !text.startsWith(displayedText)) {
       setDisplayedText('');
     }
 
     const animate = () => {
-      setDisplayedText(currentDisplayedText => {
-        if (currentDisplayedText.length >= textRef.current.length) {
-          return currentDisplayedText;
+      setDisplayedText(current => {
+        if (current.length >= textRef.current.length) {
+          // Animation is complete for the current text prop.
+          return current;
         }
-        const remainingText = textRef.current.substring(currentDisplayedText.length);
-        const match = remainingText.match(/^\S+\s*/);
-        const nextWord = match ? match[0] : remainingText;
-        const newText = currentDisplayedText + nextWord;
-        animationFrameId.current = window.setTimeout(animate, 40);
+        
+        // Add the next character.
+        const nextChar = textRef.current[current.length];
+        const newText = current + nextChar;
+
+        // Schedule the next frame.
+        animationFrameId.current = window.setTimeout(animate, 15); // 15ms delay per character for a smooth typing effect.
         return newText;
       });
     };
-    
-    if (animationFrameId.current) clearTimeout(animationFrameId.current);
+
+    // Clear any existing animation timer before starting a new one.
+    if (animationFrameId.current) {
+      clearTimeout(animationFrameId.current);
+    }
     animate();
 
+    // Cleanup function to stop animation when component unmounts or dependencies change.
     return () => {
       if (animationFrameId.current) {
         clearTimeout(animationFrameId.current);
@@ -59,60 +137,8 @@ const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ tex
     };
   }, [text, isStreaming]);
 
-  if (!displayedText) {
-    return null;
-  }
-
-  // Refactored Rendering Logic:
-  // 1. Split the text into "blocks" separated by one or more empty lines.
-  // 2. Process each block to determine if it's a heading, table, list, or paragraph.
-  // This correctly handles multi-line paragraphs, which was a flaw in the previous implementation.
-  const blocks = displayedText.split(/\n\s*\n/).filter(block => block.trim() !== '');
-
-  return (
-    <>
-      {blocks.map((block, blockIndex) => {
-        const trimmedBlock = block.trim();
-        
-        // Check for Headings
-        if (trimmedBlock.startsWith('# ')) return <h1 key={blockIndex}>{renderInlineMarkdown(trimmedBlock.substring(2))}</h1>;
-        if (trimmedBlock.startsWith('## ')) return <h2 key={blockIndex}>{renderInlineMarkdown(trimmedBlock.substring(3))}</h2>;
-        if (trimmedBlock.startsWith('### ')) return <h3 key={blockIndex}>{renderInlineMarkdown(trimmedBlock.substring(4))}</h3>;
-        
-        const lines = trimmedBlock.split('\n');
-
-        // Check for Tables
-        const isTable = lines.length > 1 && lines[0].includes('|') && lines[1].trim().replace(/[-|: ]/g, '').length === 0;
-        if (isTable) {
-            const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
-            const rows = lines.slice(2).map(rowLine => rowLine.split('|').map(c => c.trim()).filter(Boolean));
-            return (
-                <div key={blockIndex} className="overflow-x-auto my-4">
-                    <table className="min-w-full divide-y divide-border-secondary border border-border-secondary">
-                        <thead className="bg-bg-tertiary"><tr >{headers.map((h, i) => <th key={i} scope="col" className="px-4 py-2 text-left text-xs font-bold text-text-primary uppercase tracking-wider">{renderInlineMarkdown(h)}</th>)}</tr></thead>
-                        <tbody className="bg-bg-secondary divide-y divide-border-primary">{rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} className="px-4 py-2 whitespace-normal text-sm text-text-secondary">{renderInlineMarkdown(cell)}</td>)}</tr>)}</tbody>
-                    </table>
-                </div>
-            );
-        }
-
-        // Check for Lists (Unordered and Ordered)
-        // Heuristic: If every line in a block starts with a list marker, treat it as a list.
-        const isUnorderedList = lines.every(line => line.trim().startsWith('* '));
-        if (isUnorderedList) {
-            return <ul key={blockIndex} className="list-disc list-inside space-y-1 my-2 pl-2">{lines.map((item, i) => <li key={i}>{renderInlineMarkdown(item.trim().substring(2))}</li>)}</ul>;
-        }
-        const isOrderedList = lines.every(line => /^\d+\.\s/.test(line.trim()));
-        if (isOrderedList) {
-            return <ol key={blockIndex} className="list-decimal list-inside space-y-1 my-2 pl-4">{lines.map((item, i) => <li key={i}>{renderInlineMarkdown(item.trim().replace(/^\d+\.\s/, ''))}</li>)}</ol>;
-        }
-
-        // Default to Paragraph
-        // Join lines with a space to respect markdown's handling of soft line breaks.
-        return <p key={blockIndex}>{renderInlineMarkdown(lines.join(' '))}</p>;
-      })}
-    </>
-  );
+  // Use the new, robust renderer on the streaming text.
+  return renderFormattedText(displayedText);
 };
 
 export default MessageContent;

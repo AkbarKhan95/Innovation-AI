@@ -1,5 +1,6 @@
+
+
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 // Types
 import type { Message, ChatSession, User, Theme, VoiceOption, AIModel, Topic, GroundingChunk, BrainstormBoard, BoardNode, BoardEdge } from './types';
@@ -36,7 +37,7 @@ import ImageIcon from './components/icons/ImageIcon';
 import DownloadIcon from './components/icons/DownloadIcon';
 import AddToBoardIcon from './components/icons/AddToBoardIcon';
 import PencilIcon from './components/icons/PencilIcon';
-import ImageGenerationPlaceholder from './components/ImageGenerationPlaceholder';
+import TermsModal from './components/TermsModal';
 
 // Hooks
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -48,6 +49,7 @@ import { AVAILABLE_MODELS } from './constants';
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
 const BrainstormBoardComponent = React.lazy(() => import('./components/BrainstormBoard'));
 const Modal = React.lazy(() => import('./components/Modal'));
+const AboutModal = React.lazy(() => import('./components/AboutModal'));
 
 // Fix for SpeechRecognition API types not being in default TypeScript lib
 interface SpeechRecognitionEvent extends Event {
@@ -115,21 +117,21 @@ const getFriendlyErrorMessage = (error: unknown): string => {
     return 'An unknown error occurred.';
 };
 
-const imageLoadingMessages = ["🎨 Sketching your idea...", "🖌️ Applying color palette...", "✨ Adding final details...", "🖼️ Rendering your image..."];
 const videoLoadingMessages = ["🎬 Directing your scene...", "💡 Adjusting the lighting...", "🎥 Camera is rolling...", "🎞️ Rendering the final cut... this can take a few minutes."];
 
 
 const App: React.FC = () => {
     // State
     const [user, setUser] = useState<User | null>(null);
+    const [termsAccepted, setTermsAccepted] = useState(() => localStorage.getItem('termsAccepted') === 'true');
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isThinking, setIsThinking] = useState(false); // For text model loading indicator
     const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
     const [isDashboardOpen, setDashboardOpen] = useState(false);
     const [isBoardOpen, setBoardOpen] = useState(false);
+    const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+    const [hasSeenAboutModal, setHasSeenAboutModal] = useState(() => localStorage.getItem('hasSeenAboutModal') === 'true');
     const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
     const [theme, setTheme] = useState<Theme>('light');
     const [voice, setVoice] = useState<VoiceOption>('male-robot');
@@ -142,7 +144,6 @@ const App: React.FC = () => {
     const [editText, setEditText] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [videoLoadingMessage, setVideoLoadingMessage] = useState('');
-    const [imageLoadingMessage, setImageLoadingMessage] = useState('');
 
 
     // Refs
@@ -153,6 +154,8 @@ const App: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const speechRecognition = useRef<SpeechRecognition | null>(null);
     const editTextAreaRef = useRef<HTMLTextAreaElement>(null);
+    const initialCheckCompleted = useRef(false);
+
 
     // Custom Hooks
     const { speakingMessageId, toggleReadAloud, playSample } = useSpeechSynthesis(voice);
@@ -160,7 +163,6 @@ const App: React.FC = () => {
     // Derived State
     const currentSession = chatSessions.find(s => s.id === currentSessionId);
     const lastAiMessage = [...(currentSession?.messages ?? [])].reverse().find(m => m.sender === 'ai');
-    const isAnyImageLoading = currentSession?.messages.some(m => m.loading === 'image') ?? false;
     const isAnyVideoLoading = currentSession?.messages.some(m => m.loading === 'video') ?? false;
     
     // Effects
@@ -196,12 +198,27 @@ const App: React.FC = () => {
     }, [theme]);
     
     useEffect(() => {
-        localStorage.setItem('sidebarCollapsed', String(isCollapsed));
-    }, [isCollapsed]);
+        // When the board is open, we temporarily store the pre-board state of the sidebar.
+        // When the board closes, we restore it. This allows the sidebar to be fully hidden
+        // without losing the user's collapsed/expanded preference.
+        if (isBoardOpen) {
+            // Use a session storage to remember the state just for this session
+            sessionStorage.setItem('sidebarCollapsedBeforeBoard', String(isCollapsed));
+            setIsCollapsed(true); // Force collapse for hiding
+        } else if (sessionStorage.getItem('sidebarCollapsedBeforeBoard') !== null) {
+            // Restore the previous state when the board is closed
+            const wasCollapsed = sessionStorage.getItem('sidebarCollapsedBeforeBoard') === 'true';
+            setIsCollapsed(wasCollapsed);
+            sessionStorage.removeItem('sidebarCollapsedBeforeBoard');
+        } else {
+            // Default behavior: save collapse state to local storage
+             localStorage.setItem('sidebarCollapsed', String(isCollapsed));
+        }
+    }, [isCollapsed, isBoardOpen]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [currentSession?.messages, isLoading, isThinking]);
+    }, [currentSession?.messages, currentSession?.isLoading]);
 
     useEffect(() => {
         if (pendingPrompt.current && currentSession && currentSession.id === pendingPrompt.current.sessionId) {
@@ -209,6 +226,18 @@ const App: React.FC = () => {
             pendingPrompt.current = null;
         }
     }, [currentSession]);
+
+    // Effect to robustly show the About modal on the first visit after login.
+    // The ref ensures this check only happens once per session.
+    useEffect(() => {
+        if (user && !initialCheckCompleted.current) {
+            const seen = localStorage.getItem('hasSeenAboutModal') === 'true';
+            if (!seen && !currentSessionId) {
+                setIsAboutModalOpen(true);
+            }
+            initialCheckCompleted.current = true;
+        }
+    }, [user, currentSessionId]);
 
     // Effect for cycling video loading messages
     useEffect(() => {
@@ -233,30 +262,6 @@ const App: React.FC = () => {
         };
     }, [isAnyVideoLoading]);
 
-     // Effect for cycling image loading messages
-    useEffect(() => {
-        let intervalId: ReturnType<typeof setInterval> | null = null;
-        
-        if (isAnyImageLoading) {
-            let messageIndex = 0;
-            setImageLoadingMessage(imageLoadingMessages[0]);
-            
-            intervalId = setInterval(() => {
-                messageIndex = (messageIndex + 1) % imageLoadingMessages.length;
-                setImageLoadingMessage(imageLoadingMessages[messageIndex]);
-            }, 2500);
-        } else {
-             setImageLoadingMessage('');
-        }
-
-        return () => {
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-        };
-    }, [isAnyImageLoading]);
-
-
     // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
@@ -277,6 +282,11 @@ const App: React.FC = () => {
 
 
     // Handlers
+    const handleAcceptTerms = () => {
+        localStorage.setItem('termsAccepted', 'true');
+        setTermsAccepted(true);
+    };
+    
     const handleLogin = (loggedInUser: User) => {
         setUser(loggedInUser);
         localStorage.setItem('user', JSON.stringify(loggedInUser));
@@ -289,6 +299,13 @@ const App: React.FC = () => {
         localStorage.removeItem('user');
     };
 
+    const handleUpdateUserPicture = (pictureDataUrl: string) => {
+        if (!user) return;
+        const updatedUser = { ...user, picture: pictureDataUrl };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
     const handleSetVoice = (newVoice: VoiceOption, sampleText: string) => {
         setVoice(newVoice);
         playSample(newVoice, sampleText);
@@ -296,7 +313,7 @@ const App: React.FC = () => {
 
     const handleNewChat = (modelId: AIModel['id'] = 'gemini-2.5-flash', initialPrompt?: string) => {
         const newSession: ChatSession = {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             title: initialPrompt ? 'New Idea' : 'New Chat',
             messages: [],
             modelId: modelId,
@@ -315,8 +332,30 @@ const App: React.FC = () => {
     };
     
     const handlePromptWithTopic = (topic: Topic) => {
-        const prompt = `Tell me about innovative ideas related to ${topic.name} in India. Format your response with clear headings and lists.`;
-        
+        let prompt = '';
+        switch (topic.id) {
+            case 'sustainability':
+                prompt = `Draft a high-tech, sustainable city blueprint for a major Indian metro. Using current data, focus on a circular economy for waste, clean urban mobility, and next-gen green energy solutions. Present as an actionable proposal.`;
+                break;
+            case 'defence':
+                prompt = `Using the latest global defense trends, devise a strategy for India's technological military superiority. Propose three cutting-edge R&D projects: AI-driven cyber warfare, autonomous border surveillance swarms, and advanced stealth materials. Give them compelling codenames.`;
+                break;
+            case 'healthcare':
+                prompt = `Blueprint an AI-first public health platform for rural India, referencing the latest telehealth innovations. Detail its core features for low-bandwidth diagnostics, multi-lingual AI assistants, and a streamlined doctor-patient connection system. How would you pilot this?`;
+                break;
+            case 'digital_india':
+                prompt = `Using the latest information from the live internet, outline a strategy for "Digital India 2.0". Identify the top 3 emerging technologies that could have the biggest impact by 2030 and propose a flagship government program for each.`;
+                break;
+            case 'transport':
+                prompt = `Design a smart, unified public transport blueprint for a tier-2 Indian city. The plan must integrate electric buses, metro, and last-mile EVs into a single app. Citing recent smart city projects, detail the tech stack for real-time tracking, unified payment, and AI-powered route optimization.`;
+                break;
+            case 'energy':
+                prompt = `Based on current global energy policies, draft a national mission to establish India as a Green Hydrogen superpower. Detail the plan for solar-powered production, innovative storage and transport, and industrial application in sectors like steel and fertilizer manufacturing.`;
+                break;
+            default:
+                prompt = `Tell me about innovative ideas related to ${topic.name} in India. Format your response with clear headings and lists.`;
+        }
+
         if (!currentSession || currentSession.messages.length > 0) {
             handleNewChat('gemini-2.5-flash', prompt);
         } else {
@@ -341,17 +380,17 @@ const App: React.FC = () => {
     const generateVisualResponse = async (text: string, modelType: 'Image' | 'Video') => {
         if (!currentSession) return;
 
-        setIsLoading(true);
+        setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: true } : s));
 
         const aiResponseMessage: Message = { 
-            id: uuidv4(), 
+            id: crypto.randomUUID(), 
             sender: 'ai', 
             text: '',
             loading: modelType === 'Image' ? 'image' : 'video' 
         };
 
         setChatSessions(prev => prev.map(s =>
-            s.id === currentSession.id ? { ...s, messages: [...s.messages, aiResponseMessage] } : s
+            s.id === currentSession!.id ? { ...s, messages: [...s.messages, aiResponseMessage] } : s
         ));
         
         try {
@@ -384,7 +423,7 @@ const App: React.FC = () => {
             const errorMessage = getFriendlyErrorMessage(error);
             updateAIMessage(aiResponseMessage.id, { text: `Sorry, I ran into an error: ${errorMessage}`, loading: false });
         } finally {
-            setIsLoading(false);
+            setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
         }
     };
 
@@ -450,7 +489,7 @@ const App: React.FC = () => {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (isLoading || (!prompt.trim() && !attachedFile)) return;
+        if (currentSession?.isLoading || (!prompt.trim() && !attachedFile)) return;
         handleSendMessage(prompt, attachedFile || undefined);
         setPrompt('');
         setAttachedFile(null);
@@ -466,16 +505,21 @@ const App: React.FC = () => {
         const modelId = currentSession.modelId || 'gemini-2.5-flash';
         const model = AVAILABLE_MODELS.find(m => m.id === modelId);
 
-        setIsLoading(true);
+        setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: true } : s));
 
         // --- TEXT MODEL LOGIC ---
         if (model?.type === 'Text') {
-            setIsThinking(true);
+            const userMessage: Message = { id: crypto.randomUUID(), sender: 'user', text: prompt, file };
+            const aiMessageId = crypto.randomUUID();
+            const aiResponseMessage: Message = { id: aiMessageId, sender: 'ai', text: '', loading: 'text' };
 
             if (!isRegeneration) {
-                const userMessage: Message = { id: uuidv4(), sender: 'user', text: prompt, file };
                 setChatSessions(prev => prev.map(s =>
-                    s.id === currentSession.id ? { ...s, messages: [...s.messages, userMessage] } : s
+                    s.id === currentSession.id ? { ...s, messages: [...s.messages, userMessage, aiResponseMessage] } : s
+                ));
+            } else {
+                 setChatSessions(prev => prev.map(s =>
+                    s.id === currentSession.id ? { ...s, messages: [...s.messages, aiResponseMessage] } : s
                 ));
             }
 
@@ -486,36 +530,27 @@ const App: React.FC = () => {
                 const stream = await generateChatResponseStream(chatRef.current, prompt, modelId, file);
 
                 let isFirstChunk = true;
-                let aiMessageId: string | null = null;
 
                 for await (const chunk of stream) {
                     if (isFirstChunk) {
-                        setIsThinking(false);
-                        const newAiMessage: Message = {
-                            id: uuidv4(),
-                            sender: 'ai',
-                            text: chunk.text,
-                            groundingChunks: chunk.groundingChunks ?? undefined
-                        };
-                        aiMessageId = newAiMessage.id;
-                        setChatSessions(prev => prev.map(s =>
-                            s.id === currentSessionId ? { ...s, messages: [...s.messages, newAiMessage] } : s
-                        ));
+                        updateAIMessage(aiMessageId, { text: chunk.text, groundingChunks: chunk.groundingChunks ?? undefined, loading: false });
                         isFirstChunk = false;
-                    } else if (aiMessageId) {
+                    } else {
                         updateAIMessage(aiMessageId, { text: chunk.text, groundingChunks: chunk.groundingChunks ?? undefined });
                     }
                 }
-                if (isFirstChunk) { // Handle cases where the stream is empty
-                    setIsThinking(false);
+                
+                if (isFirstChunk) { // Handle cases where the stream is empty and no error occurred
+                    setChatSessions(prev => prev.map(s => {
+                        if (s.id !== currentSessionId) return s;
+                        return { ...s, messages: s.messages.filter(m => m.id !== aiMessageId) };
+                    }));
                 }
             } catch (error) {
                 console.error("Error generating text content:", error);
-                setIsThinking(false);
-                const errorMessage: Message = { id: uuidv4(), sender: 'ai', text: `Sorry, I ran into an error: ${getFriendlyErrorMessage(error)}` };
-                setChatSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, messages: [...s.messages, errorMessage] } : s));
+                updateAIMessage(aiMessageId, { text: `Sorry, I ran into an error: ${getFriendlyErrorMessage(error)}`, loading: false });
             } finally {
-                setIsLoading(false);
+                setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
                 const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
                 if (shouldGenerateTitle) {
                     generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
@@ -523,11 +558,10 @@ const App: React.FC = () => {
             }
         } else {
             // --- IMAGE/VIDEO MODEL LOGIC ---
-            setIsThinking(false);
-            const aiResponseMessage: Message = { id: uuidv4(), sender: 'ai', text: '', groundingChunks: [] };
+            const aiResponseMessage: Message = { id: crypto.randomUUID(), sender: 'ai', text: '', groundingChunks: [] };
 
             if (!isRegeneration) {
-                const userMessage: Message = { id: uuidv4(), sender: 'user', text: prompt, file };
+                const userMessage: Message = { id: crypto.randomUUID(), sender: 'user', text: prompt, file };
                 setChatSessions(prev => prev.map(s =>
                     s.id === currentSession.id ? { ...s, messages: [...s.messages, userMessage, aiResponseMessage] } : s
                 ));
@@ -582,7 +616,7 @@ const App: React.FC = () => {
                 const errorMessage = getFriendlyErrorMessage(error);
                 updateAIMessage(aiResponseMessage.id, { text: `Sorry, I ran into an error: ${errorMessage}`, loading: false });
             } finally {
-                setIsLoading(false);
+                setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
                 const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
                 if (shouldGenerateTitle) {
                     generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
@@ -610,13 +644,32 @@ const App: React.FC = () => {
     }, [currentSessionId]);
 
     const handleAddToBoard = (text: string) => {
+        if (!currentSession) return;
+
+        const board = currentSession.board ?? { nodes: [], edges: [], viewport: { pan: { x: 0, y: 0 }, zoom: 1 } };
+        const { pan, zoom } = board.viewport;
+        
+        // Use window dimensions as an approximation of the board's viewport size.
+        const viewWidth = window.innerWidth;
+        const viewHeight = window.innerHeight;
+
+        // Calculate the center of the viewport in board coordinates.
+        const centerX = (viewWidth / 2 - pan.x) / zoom;
+        const centerY = (viewHeight / 2 - pan.y) / zoom;
+        
+        // Add a small random offset to prevent nodes from stacking perfectly on top of each other.
+        const offsetX = (Math.random() - 0.5) * 50;
+        const offsetY = (Math.random() - 0.5) * 50;
+        
         const newNode: BoardNode = {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             content: text,
-            position: { x: 100, y: 100 }, // Position can be randomized or centered later
+            position: { x: centerX + offsetX, y: centerY + offsetY },
             color: 'bg-yellow-200'
         };
-        handleUpdateBoard(board => ({ ...board, nodes: [...board.nodes, newNode] }));
+
+        handleUpdateBoard(currentBoard => ({ ...currentBoard, nodes: [...currentBoard.nodes, newNode] }));
+        handleOpenBoard();
     };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -646,7 +699,7 @@ const App: React.FC = () => {
     };
 
     const handleRegenerate = async () => {
-        if (!currentSession || isLoading) return;
+        if (!currentSession || currentSession.isLoading) return;
         let lastUserMessageIndex = -1;
         for (let i = currentSession.messages.length - 1; i >= 0; i--) {
             if (currentSession.messages[i].sender === 'user') {
@@ -773,8 +826,22 @@ const App: React.FC = () => {
     };
     const handleOpenDashboard = () => setDashboardOpen(true);
     const handleCloseDashboard = () => setDashboardOpen(false);
+    
     const handleOpenBoard = () => setBoardOpen(true);
     const handleCloseBoard = () => setBoardOpen(false);
+    const handleOpenAboutModal = () => setIsAboutModalOpen(true);
+    const handleCloseAboutModal = () => {
+        setIsAboutModalOpen(false);
+        // Mark as seen so it doesn't pop up again on this device.
+        if (!hasSeenAboutModal) {
+            localStorage.setItem('hasSeenAboutModal', 'true');
+            setHasSeenAboutModal(true);
+        }
+    };
+
+    if (!termsAccepted) {
+        return <TermsModal onAccept={handleAcceptTerms} />;
+    }
 
     if (!user) {
         return <LoginPage onLogin={handleLogin} />;
@@ -782,28 +849,32 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden font-sans">
-            <Sidebar
-                chatSessions={chatSessions}
-                currentSessionId={currentSessionId}
-                onNewChat={() => handleNewChat()}
-                onSelectChat={handleSelectChat}
-                onDeleteChat={handleDeleteChat}
-                onRenameChat={handleRenameChat}
-                editingSessionId={editingSessionId}
-                setEditingSessionId={setEditingSessionId}
-                isSidebarOpen={isSidebarOpen}
-                isCollapsed={isCollapsed}
-                toggleCollapse={handleToggleCollapse}
-                user={user}
-                onLogout={handleLogout}
-                onGoToHome={handleGoToHome}
-                onOpenSettings={handleOpenDashboard}
-            />
+            <div className={`${isBoardOpen ? 'md:hidden' : ''}`}>
+                <Sidebar
+                    chatSessions={chatSessions}
+                    currentSessionId={currentSessionId}
+                    onNewChat={() => handleNewChat()}
+                    onSelectChat={handleSelectChat}
+                    onDeleteChat={handleDeleteChat}
+                    onRenameChat={handleRenameChat}
+                    editingSessionId={editingSessionId}
+                    setEditingSessionId={setEditingSessionId}
+                    isSidebarOpen={isSidebarOpen}
+                    isCollapsed={isCollapsed}
+                    toggleCollapse={handleToggleCollapse}
+                    user={user}
+                    onLogout={handleLogout}
+                    onGoToHome={handleGoToHome}
+                    onOpenSettings={handleOpenDashboard}
+                />
+            </div>
 
-            <main className={`flex-1 flex flex-col transition-all duration-[400ms] ease-in-out origin-left ${isCollapsed ? 'md:ml-20' : 'md:ml-80'}`}>
+            <main className={`flex-1 flex flex-col transition-all duration-[400ms] ease-in-out origin-left ${
+                isBoardOpen ? 'md:ml-0' : (isCollapsed ? 'md:ml-20' : 'md:ml-80')
+            }`}>
                  {!currentSession ? (
                     <>
-                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary/80 backdrop-blur-sm relative">
+                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
                             <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
                                 <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
                             </button>
@@ -811,12 +882,12 @@ const App: React.FC = () => {
                                 Innovation AI
                             </h1>
                         </header>
-                        <ModelSelector onSelectModel={handleNewChat} onPromptWithTopic={handlePromptWithTopic} />
+                        <ModelSelector onSelectModel={handleNewChat} onPromptWithTopic={handlePromptWithTopic} onOpenAbout={handleOpenAboutModal} />
                     </>
                 ) : (
                     <div className="flex flex-col h-full">
                         {/* Chat Header */}
-                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary/80 backdrop-blur-sm relative">
+                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
                             <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
                                 <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
                             </button>
@@ -832,7 +903,7 @@ const App: React.FC = () => {
                         {/* Messages Area */}
                         <div className="flex-1 overflow-y-auto">
                            <div className="max-w-4xl mx-auto px-4 py-6">
-                            {currentSession.messages.length === 0 && !isThinking ? (
+                            {currentSession.messages.length === 0 && !currentSession.isLoading ? (
                                 <Greeting user={user} onPromptWithTopic={handlePromptWithTopic} />
                             ) : (
                                 <div className="space-y-10">
@@ -847,7 +918,7 @@ const App: React.FC = () => {
                                         return currentSession.messages.map((msg, index) => {
                                             const isLastUserMessage = index === lastUserMessageIndex;
                                             const isLastAiMessage = msg.id === lastAiMessage?.id;
-                                            const isStreaming = isLoading && isLastAiMessage && currentSession.modelId === 'gemini-2.5-flash';
+                                            const isStreaming = !!currentSession.isLoading && isLastAiMessage && currentSession.modelId === 'gemini-2.5-flash';
                                             const hasContent = (msg.text && msg.text.trim().length > 0) || msg.imageUrl || msg.videoUrl;
 
                                             return (
@@ -862,47 +933,41 @@ const App: React.FC = () => {
                                                     <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-xl group ${ msg.sender === 'user' ? 'items-end' : 'items-start' }`}>
                                                         
                                                         <div className={`
-                                                            px-4 py-3 rounded-2xl border transition-all
+                                                            px-5 py-4 rounded-2xl border transition-all
                                                             ${msg.sender === 'user'
                                                                 ? 'bg-bg-accent text-text-on-accent rounded-br-lg border-transparent'
-                                                                : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary`
+                                                                : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary shadow-md`
                                                             }
                                                         `}>
-                                                            <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'prose-invert' : 'dark:prose-invert'}`}>
-                                                                <MessageContent text={msg.text} isStreaming={isStreaming} />
-
-                                                                {msg.file && msg.sender === 'user' && (
-                                                                    <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
-                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
-                                                                        <span className="text-sm truncate">{msg.file.name}</span>
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                {msg.loading === 'image' && (
-                                                                    <div className="mt-2">
-                                                                        <ImageGenerationPlaceholder message={imageLoadingMessage} />
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                {msg.loading === 'video' && (
+                                                            <div className={`max-w-none prose ${msg.sender === 'user' ? 'prose-invert' : ''}`}>
+                                                                {msg.loading === 'video' ? (
                                                                     <div className="flex flex-col items-center justify-center p-2 text-center">
                                                                         <p className="text-text-secondary text-sm mb-2 animate-fade-in">{videoLoadingMessage}</p>
                                                                         <LoadingSpinner />
                                                                     </div>
+                                                                ) : msg.loading ? (
+                                                                    <LoadingSpinner />
+                                                                ) : (
+                                                                    <MessageContent text={msg.text} isStreaming={isStreaming} />
                                                                 )}
-
                                                                 {msg.imageUrl && (
                                                                      <div className="mt-2 relative">
+                                                                        {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
                                                                         <img src={msg.imageUrl} alt="Generated content" className="rounded-lg w-full h-auto" />
                                                                         <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.jpg`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
                                                                 )}
-                                                                
                                                                 {msg.videoUrl && (
                                                                      <div className="mt-2 relative">
                                                                         <video src={msg.videoUrl} controls className="rounded-lg w-full h-auto"></video>
                                                                         <a href={msg.videoUrl} download={`innovation-ai-video-${msg.id}.mp4`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
+                                                                )}
+                                                                 {msg.file && msg.sender === 'user' && (
+                                                                    <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
+                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
+                                                                        <span className="text-sm truncate">{msg.file.name}</span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             {msg.sender === 'ai' && msg.groundingChunks && msg.groundingChunks.length > 0 && <GroundingSources chunks={msg.groundingChunks} />}
@@ -925,14 +990,14 @@ const App: React.FC = () => {
                                                                 <button onClick={() => handleAddToBoard(msg.text)} title="Add to Brainstorm Board" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                   <AddToBoardIcon className="w-4 h-4" />
                                                                 </button>
-                                                                {isLastAiMessage && !isLoading && (
+                                                                {isLastAiMessage && !currentSession.isLoading && (
                                                                     <button onClick={handleRegenerate} title="Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                         <RegenerateIcon className="w-4 h-4" />
                                                                     </button>
                                                                 )}
                                                             </div>
                                                         )}
-                                                        {msg.sender === 'user' && isLastUserMessage && !isLoading && !editingMessage && (
+                                                        {msg.sender === 'user' && isLastUserMessage && !currentSession.isLoading && !editingMessage && (
                                                             <div className="flex justify-end items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                                 <button onClick={() => handleStartEdit(msg)} title="Edit & Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                     <PencilIcon className="w-4 h-4" />
@@ -942,24 +1007,18 @@ const App: React.FC = () => {
                                                     </div>
 
                                                     {msg.sender === 'user' && (
-                                                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
-                                                            <UserIcon className="w-6 h-6 text-text-secondary" />
-                                                        </div>
+                                                        user.picture ? (
+                                                            <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
+                                                                <span className="text-lg font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
+                                                            </div>
+                                                        )
                                                     )}
                                                 </div>
                                             );
                                         });
                                     })()}
-                                </div>
-                            )}
-                            {isThinking && (
-                                <div className="flex w-full items-start gap-3 animate-bubble-in justify-start mt-10">
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
-                                        <BotIcon className="w-7 h-7 text-bg-accent" />
-                                    </div>
-                                    <div className="px-4 py-3 rounded-2xl border bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary">
-                                        <LoadingSpinner />
-                                    </div>
                                 </div>
                             )}
                             <div ref={messagesEndRef} />
@@ -973,7 +1032,7 @@ const App: React.FC = () => {
                                     <ChatModelSwitcher 
                                         currentModelId={currentSession.modelId || 'gemini-2.5-flash'}
                                         onSelectModel={handleModelChange}
-                                        disabled={isLoading}
+                                        disabled={!!currentSession.isLoading}
                                     />
                                </div>
                                <form onSubmit={handleFormSubmit}>
@@ -1005,12 +1064,12 @@ const App: React.FC = () => {
                                                 placeholder={isRecording ? 'Listening...' : `Ask anything or drop a file...`}
                                                 className="flex-1 bg-transparent resize-none border-none focus:outline-none max-h-48 text-text-primary placeholder:text-text-secondary py-2"
                                                 rows={1}
-                                                disabled={isLoading}
+                                                disabled={!!currentSession.isLoading}
                                             />
                                             <button type="button" onClick={handleToggleRecording} className={`p-2 rounded-full hover:bg-bg-tertiary-hover flex-shrink-0 ${isRecording ? 'text-red-500' : 'text-text-secondary'}`} aria-label={isRecording ? 'Stop recording' : 'Start recording'}>
                                                 <MicrophoneIcon className="w-5 h-5" />
                                             </button>
-                                            <button type="submit" disabled={isLoading || (!prompt.trim() && !attachedFile)} className="p-2 rounded-full bg-bg-accent text-text-on-accent transition-colors hover:bg-bg-accent-hover disabled:bg-bg-accent-disabled disabled:cursor-not-allowed flex-shrink-0" aria-label="Send message">
+                                            <button type="submit" disabled={!!currentSession.isLoading || (!prompt.trim() && !attachedFile)} className="p-2 rounded-full bg-bg-accent text-text-on-accent transition-colors hover:bg-bg-accent-hover disabled:bg-bg-accent-disabled disabled:cursor-not-allowed flex-shrink-0" aria-label="Send message">
                                                 <SendIcon className="w-5 h-5" />
                                             </button>
                                         </div>
@@ -1023,6 +1082,7 @@ const App: React.FC = () => {
             </main>
 
             <Suspense fallback={<div className="fixed inset-0 bg-modal-backdrop z-40 flex items-center justify-center"><LoadingSpinner /></div>}>
+                <AboutModal isOpen={isAboutModalOpen} onClose={handleCloseAboutModal} />
                 <Dashboard 
                     isOpen={isDashboardOpen}
                     onClose={handleCloseDashboard}
@@ -1033,6 +1093,7 @@ const App: React.FC = () => {
                     setVoice={handleSetVoice}
                     handleClearHistory={handleClearHistory}
                     user={user}
+                    onUpdateUserPicture={handleUpdateUserPicture}
                 />
                 {currentSession && (
                      <BrainstormBoardComponent
