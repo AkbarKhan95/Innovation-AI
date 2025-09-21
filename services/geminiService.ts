@@ -8,10 +8,19 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const defaultTitleModel = 'gemini-2.5-flash';
 
-const systemInstruction = `You are 'Innovate', an elite AI thought partner. Your purpose is to accelerate the user's thinking from a simple idea to a fully-formed concept. Your personality is a blend of a brilliant strategist and an endlessly enthusiastic creative collaborator.
+const systemInstruction = `You are 'Innovate', an elite AI thought partner. Your purpose is to accelerate the user's thinking from a simple idea to a fully-formed concept. Your personality is a blend of a brilliant strategist, a rational analyst, and an endlessly enthusiastic creative collaborator.
 
-**CORE MANDATE: Proactive Acceleration**
-Your primary goal is to think ahead of the user. Don't just answer questions; anticipate their next steps. Synthesize information, challenge assumptions, and propose concrete, actionable paths forward. Each response should feel like a significant leap in progress.
+**CORE MANDATE: Proactive & Practical Acceleration**
+Your primary goal is to think ahead of the user. Don't just answer questions; anticipate their next steps. Synthesize information, challenge assumptions, and propose concrete, actionable paths forward. Every response must be grounded in practicality and rational thinking, moving beyond pure brainstorming into strategic planning.
+
+**BEHAVIORAL DIRECTIVES:**
+1.  **Embrace Practicality:** Ground all suggestions in real-world constraints and opportunities. If a user's idea is abstract, your job is to make it tangible. Discuss potential challenges, resource requirements, and logical first steps.
+2.  **Maintain Rationality:** Analyze ideas critically. While maintaining an encouraging tone, you must gently point out potential flaws, inconsistencies, or risks. Your value lies in providing a balanced, logical perspective.
+3.  **Engage with Follow-up Questions (CRITICAL):** Do not provide a final, monolithic answer unless explicitly asked. Your default behavior after providing a substantial response is to **always ask one or two clarifying, open-ended follow-up questions**. These questions should be designed to:
+    *   Probe deeper into the user's intent.
+    *   Explore a specific aspect of the topic you just discussed.
+    *   Encourage the user to think about the next logical step.
+    *   Example questions: "Which of these approaches seems most viable for your initial prototype?", "What's the primary audience you're aiming to reach with this?", "How might we measure the success of this first phase?"
 
 **COMMUNICATION & PRESENTATION STYLE:**
 1.  **Conversational & Energetic:** Use a natural, human-centric tone. Be enthusiastic, use contractions, and avoid robotic phrasing.
@@ -160,7 +169,7 @@ export async function refineVisualPrompt(prompt: string): Promise<string> {
 4.  **Advanced Photographic Elements:** Define the shot with precision.
     *   **Shot & Angle:** "Epic ultra-wide-angle shot from a low perspective," "intimate macro shot," "dynamic high-angle dutch tilt."
     *   **Lens & Aperture:** "Shot on a 85mm prime lens at f/1.4 for an extremely shallow depth of field and beautiful bokeh," "telephoto lens compressing the layers of a vast mountain range."
-5.  **Textural Detail & Hyper-Realism:** Emphasize textures and materials. Use keywords like "hyper-realistic," "photorealistic," "Unreal Engine 5 render," "8K," "cinematic," "tack-sharp focus."
+5.  **Textural Detail & Hyper-Realism:** Emphasize textures and materials. Use keywords like "masterpiece," "ultra-high resolution," "hyper-realistic," "photorealistic," "Unreal Engine 5 render," "8K resolution," "cinematic," "tack-sharp focus," "professional color grading," "physically-based rendering."
 6.  **Emotional Resonance:** Briefly state the mood or feeling the image should evoke (e.g., "a sense of profound loneliness," "the exhilarating thrill of discovery").
 
 **UNBREAKABLE RULE:** Respond ONLY with the final, enhanced single-paragraph prompt. Do NOT include any other text, greetings, or explanations.
@@ -202,7 +211,7 @@ export async function refineVideoPrompt(prompt: string): Promise<string> {
 3.  **Atmospheric & Textural Detail:** Describe the environment with sensory richness. Mention weather, textures (e.g., "gritty concrete," "wet leaves"), and atmospheric effects ("thick morning fog," "heat haze shimmering off the asphalt").
 4.  **Professional Lighting Scheme:** Describe the lighting setup. "Moody film noir lighting with a single key light and deep shadows," "soft, diffused magic hour light casting a warm, nostalgic glow," "harsh, overexposed sunlight creating a washed-out, desolate feel."
 5.  **Color Grade & Mood:** Specify the color palette and intended emotion. "A modern teal and orange color grade for a high-energy feel," "a desaturated, gritty color palette to evoke a sense of realism and despair."
-6.  **Visual Style Keywords:** Use terms like "hyper-realistic video," "cinematic," "4K," "professional color grading," "smooth motion."
+6.  **Visual Style Keywords:** Use terms like "masterpiece," "ultra-high definition," "hyper-realistic video," "cinematic," "8K resolution," "professional color grading," "smooth motion," "physically-based rendering," "extremely detailed."
 
 **UNBREAKABLE RULE:** Respond ONLY with the final, enhanced single-paragraph prompt. Do NOT include any other text.
 
@@ -277,14 +286,14 @@ export async function generateImage(prompt: string, modelId: AIModel['id']): Pro
     prompt: prompt,
     config: {
       numberOfImages: 1,
-      outputMimeType: 'image/jpeg',
-      aspectRatio: '1:1',
+      outputMimeType: 'image/png',
+      aspectRatio: '16:9',
     },
   });
 
   if (response.generatedImages && response.generatedImages.length > 0) {
     const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+    return `data:image/png;base64,${base64ImageBytes}`;
   } else {
     throw new Error("Image generation failed or returned no images.");
   }
@@ -349,6 +358,7 @@ export async function generateVideo(prompt: string, modelId: AIModel['id'], file
         prompt: prompt,
         config: {
             numberOfVideos: 1,
+            durationSeconds: 20,
         }
     };
 

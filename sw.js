@@ -43,6 +43,7 @@ const urlsToCache = [
   '/components/icons/NewMaleIcon.tsx',
   '/components/icons/PaletteIcon.tsx',
   '/components/icons/PaperclipIcon.tsx',
+  '/components/icons/PdfIcon.tsx',
   '/components/icons/PencilIcon.tsx',
   '/components/icons/RegenerateIcon.tsx',
   '/components/icons/SearchIcon.tsx',
@@ -66,14 +67,17 @@ const urlsToCache = [
   'https://cdn.tailwindcss.com',
   'https://aistudiocdn.com/react@^19.1.1',
   'https://aistudiocdn.com/react-dom@^19.1.1/client',
-  'https://aistudiocdn.com/@google/genai@^1.19.0',
+  'https://aistudiocdn.com/@google/genai@^1.20.0',
   'https://aistudiocdn.com/uuid@^13.0.0',
   '/components/BrainstormBoard.tsx',
   '/components/BoardNode.tsx',
   '/components/icons/BrainstormIcon.tsx',
   '/components/icons/AddToBoardIcon.tsx',
   '/components/icons/CenterIcon.tsx',
-   '/components/icons/LinkIcon.tsx'
+   '/components/icons/LinkIcon.tsx',
+   '/components/ChatModelSwitcher.tsx',
+  '/components/Modal.tsx',
+  '/hooks/useSpeechSynthesis.ts'
 ];
 
 self.addEventListener('install', (event) => {
@@ -81,6 +85,8 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching app shell');
+        // Use addAll to fetch and cache all the URLs.
+        // It's atomic - if one request fails, the whole operation fails.
         return cache.addAll(urlsToCache);
       })
   );
@@ -92,6 +98,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
+          // If the cache name is not in our whitelist, delete it.
+          // This is useful for clearing out old caches.
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             return caches.delete(cacheName);
           }
@@ -107,22 +115,52 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // For API calls, always fetch from the network.
+  // For API calls, always fetch from the network (network-first, no cache).
+  // This ensures we never use stale data and don't cache potentially sensitive information.
   if (event.request.url.includes('googleapis.com')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // For all other requests, try serving from cache first.
+  // For all other requests, use a "Cache falling back to network" strategy.
+  // This is ideal for the application shell and assets.
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response.
+        // Cache hit - return response from cache.
         if (response) {
           return response;
         }
+
         // Not in cache - fetch from network.
-        return fetch(event.request);
+        return fetch(event.request).then(
+          (networkResponse) => {
+            // Check if we received a valid response.
+            // We only want to cache successful GET requests.
+            // We also cache 'opaque' responses which are from third-party CDNs.
+            if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+              // IMPORTANT: Clone the response. A response is a stream
+              // and can only be consumed once. We need one for the browser
+              // and one for the cache.
+              const responseToCache = networkResponse.clone();
+
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+
+            return networkResponse;
+          }
+        ).catch(error => {
+          // The fetch failed, likely due to being offline.
+          // At this point, we don't have a cached response either.
+          // We could return a generic fallback page here if we had one.
+          // For now, we'll just let the browser's default offline error show.
+          console.error('Service Worker: Fetch failed and no cache match for', event.request.url, error);
+          // To provide a better offline experience, you could return a fallback response, e.g.:
+          // return caches.match('/offline.html');
+        });
       })
   );
 });

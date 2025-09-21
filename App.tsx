@@ -38,6 +38,7 @@ import DownloadIcon from './components/icons/DownloadIcon';
 import AddToBoardIcon from './components/icons/AddToBoardIcon';
 import PencilIcon from './components/icons/PencilIcon';
 import TermsModal from './components/TermsModal';
+import PdfIcon from './components/icons/PdfIcon';
 
 // Hooks
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -498,6 +499,16 @@ const App: React.FC = () => {
         }
     };
 
+    const handlePdfQuickAction = (actionPrompt: string) => {
+        if (currentSession?.isLoading || !attachedFile || attachedFile.type !== 'application/pdf') return;
+        handleSendMessage(actionPrompt, attachedFile);
+        setPrompt('');
+        setAttachedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleSendMessage = async (prompt: string, file?: Message['file'], options: { isRegeneration?: boolean, historyForApi?: Message[] } = {}) => {
         if (!currentSession) return;
         const { isRegeneration = false, historyForApi } = options;
@@ -861,6 +872,7 @@ const App: React.FC = () => {
                     setEditingSessionId={setEditingSessionId}
                     isSidebarOpen={isSidebarOpen}
                     isCollapsed={isCollapsed}
+                    // FIX: Pass the correct handler function `handleToggleCollapse` to the `toggleCollapse` prop.
                     toggleCollapse={handleToggleCollapse}
                     user={user}
                     onLogout={handleLogout}
@@ -954,7 +966,7 @@ const App: React.FC = () => {
                                                                      <div className="mt-2 relative">
                                                                         {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
                                                                         <img src={msg.imageUrl} alt="Generated content" className="rounded-lg w-full h-auto" />
-                                                                        <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.jpg`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
+                                                                        <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.png`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
                                                                      </div>
                                                                 )}
                                                                 {msg.videoUrl && (
@@ -965,7 +977,7 @@ const App: React.FC = () => {
                                                                 )}
                                                                  {msg.file && msg.sender === 'user' && (
                                                                     <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
-                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
+                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : msg.file.type === 'application/pdf' ? <PdfIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
                                                                         <span className="text-sm truncate">{msg.file.name}</span>
                                                                     </div>
                                                                 )}
@@ -1035,11 +1047,29 @@ const App: React.FC = () => {
                                         disabled={!!currentSession.isLoading}
                                     />
                                </div>
+                               {attachedFile && attachedFile.type === 'application/pdf' && !currentSession.isLoading && (
+                                    <div className="flex items-center justify-center gap-2 mb-2 animate-fade-in">
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePdfQuickAction('Summarize this document.')}
+                                            className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
+                                        >
+                                            Summarize Document
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePdfQuickAction('Extract key points from this document as a bulleted list.')}
+                                            className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
+                                        >
+                                            Extract Key Points
+                                        </button>
+                                    </div>
+                                )}
                                <form onSubmit={handleFormSubmit}>
                                    <div className="flex flex-col p-2 bg-bg-secondary border border-border-primary rounded-2xl focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
                                         {attachedFile && (
                                             <div className="flex items-center gap-2 p-1.5 mb-2 mx-2 bg-bg-tertiary rounded-md max-w-xs animate-fade-in">
-                                                {attachedFile.type.startsWith('image/') ? <ImageIcon className="w-5 h-5 text-text-secondary" /> : <FileIcon className="w-5 h-5 text-text-secondary" />}
+                                                {attachedFile.type.startsWith('image/') ? <ImageIcon className="w-5 h-5 text-text-secondary" /> : attachedFile.type === 'application/pdf' ? <PdfIcon className="w-5 h-5 text-text-secondary" /> : <FileIcon className="w-5 h-5 text-text-secondary" />}
                                                 <span className="text-sm text-text-secondary truncate">{attachedFile.name}</span>
                                                 <button type="button" onClick={() => setAttachedFile(null)} className="p-0.5 rounded-full hover:bg-bg-tertiary-hover">
                                                     <XIcon className="w-4 h-4 text-text-secondary"/>
@@ -1049,7 +1079,7 @@ const App: React.FC = () => {
                                         <div className="flex items-end gap-2">
                                             <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary-hover text-text-secondary flex-shrink-0" aria-label="Attach file">
                                                 <PaperclipIcon className="w-5 h-5" />
-                                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*,application/pdf,.txt,.md,.csv" />
                                             </button>
                                             <textarea
                                                 ref={textareaRef}
@@ -1061,7 +1091,7 @@ const App: React.FC = () => {
                                                         handleFormSubmit(e);
                                                     }
                                                 }}
-                                                placeholder={isRecording ? 'Listening...' : `Ask anything or drop a file...`}
+                                                placeholder={isRecording ? 'Listening...' : attachedFile && attachedFile.type === 'application/pdf' ? 'Ask a question about the PDF or use a quick action...' : attachedFile ? `Describe what to do with ${attachedFile.name}...` : `Ask anything or drop a file...`}
                                                 className="flex-1 bg-transparent resize-none border-none focus:outline-none max-h-48 text-text-primary placeholder:text-text-secondary py-2"
                                                 rows={1}
                                                 disabled={!!currentSession.isLoading}
