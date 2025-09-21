@@ -47,6 +47,7 @@ const urlsToCache = [
   '/components/icons/RegenerateIcon.tsx',
   '/components/icons/SearchIcon.tsx',
   '/components/icons/SendIcon.tsx',
+  '/components/icons/ShieldCheckIcon.tsx',
   '/components/icons/SparklesIcon.tsx',
   '/components/icons/SpeakerIcon.tsx',
   '/components/icons/StopIcon.tsx',
