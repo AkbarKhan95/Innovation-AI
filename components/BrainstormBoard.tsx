@@ -266,6 +266,8 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
 
     const nodePositions = new Map(boardData.nodes.map(n => [n.id, n.position]));
     const connectingNodePos = connectingFromId ? nodePositions.get(connectingFromId) : null;
+    // FIX: Destructure viewport properties to avoid type inference issues in complex JSX.
+    const { pan, zoom } = boardData.viewport;
 
     return (
         <div className="fixed inset-0 z-30 bg-bg-primary animate-fade-in">
@@ -283,12 +285,12 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
             >
                 <div
                     className="absolute inset-0 bg-grid-pattern"
-                    style={{ backgroundPosition: `${boardData.viewport.pan.x}px ${boardData.viewport.pan.y}px`, backgroundSize: `${20 * boardData.viewport.zoom}px ${20 * boardData.viewport.zoom}px` }}
+                    style={{ backgroundPosition: `${pan.x}px ${pan.y}px`, backgroundSize: `${20 * zoom}px ${20 * zoom}px` }}
                 ></div>
 
                 <div
                     className="absolute top-0 left-0"
-                    style={{ transform: `translate(${boardData.viewport.pan.x}px, ${boardData.viewport.pan.y}px) scale(${boardData.viewport.zoom})`, transformOrigin: 'top left' }}
+                    style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'top left' }}
                 >
                     {boardData.nodes.map(node => (
                         <BoardNodeComponent
@@ -306,7 +308,7 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
                 </div>
 
                 <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{'--tw-bg-opacity': 0.1} as React.CSSProperties}>
-                    <g transform={`translate(${boardData.viewport.pan.x},${boardData.viewport.pan.y}) scale(${boardData.viewport.zoom})`}>
+                    <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
                         {boardData.edges.map(edge => {
                             const fromNode = nodePositions.get(edge.from);
                             const toNode = nodePositions.get(edge.to);
@@ -316,8 +318,8 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
                     </g>
                     {connectingFromId && connectingNodePos && (
                         <line 
-                            x1={connectingNodePos.x * boardData.viewport.zoom + boardData.viewport.pan.x} 
-                            y1={connectingNodePos.y * boardData.viewport.zoom + boardData.viewport.pan.y} 
+                            x1={connectingNodePos.x * zoom + pan.x} 
+                            y1={connectingNodePos.y * zoom + pan.y} 
                             x2={pointerPosition.x} 
                             y2={pointerPosition.y} 
                             stroke="var(--bg-accent)" strokeWidth="2" strokeDasharray="5,5" 

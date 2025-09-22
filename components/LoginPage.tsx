@@ -9,6 +9,7 @@ interface LoginPageProps {
   onLogin: (user: User) => void;
 }
 
+// This helper function can live inside the component file as it's not used elsewhere.
 const getInitials = (name: string): string => {
     const words = name.split(' ').filter(Boolean);
     if (words.length === 0) return '?';
@@ -19,12 +20,14 @@ const getInitials = (name: string): string => {
 const generateAvatar = (name: string): string => {
     const initials = getInitials(name);
     
+    // Simple hash function to get a consistent color for a given name
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        hash = hash & hash;
+        hash = hash & hash; // Convert to 32bit integer
     }
     
+    // A curated list of pleasant, modern colors
     const colors = [
         '#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', 
         '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', 
@@ -34,6 +37,7 @@ const generateAvatar = (name: string): string => {
     
     const color = colors[Math.abs(hash) % colors.length];
 
+    // Create a simple SVG avatar
     const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
             <rect width="100" height="100" fill="${color}" />
@@ -43,8 +47,10 @@ const generateAvatar = (name: string): string => {
         </svg>
     `.trim();
 
+    // Return as a base64 encoded data URL
     return `data:image/svg+xml;base64,${btoa(svg)}`;
 };
+
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [step, setStep] = useState<'initial' | 'email' | 'code'>('initial');
@@ -67,6 +73,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     e.preventDefault();
     if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('');
+      // In a real app, this would be an API call to send the code.
+      // For this demo, we generate it on the client.
       const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
       setVerificationCode(randomCode);
       setStep('code');
@@ -79,6 +87,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     e.preventDefault();
     if (code === verificationCode) {
       setError('');
+      // Generate a user-friendly name from the email
       const name = email.split('@')[0].replace(/[\._-]/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
       const picture = generateAvatar(name);
       onLogin({ name, email, picture });
@@ -89,8 +98,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   
   const renderInitialStep = () => (
     <>
-      <h2 className="text-3xl font-bold mb-2 text-text-primary">Welcome Back</h2>
-      <p className="text-text-secondary mb-8">Sign in to continue your journey of innovation.</p>
+      <div className="hidden md:block text-center md:text-left">
+        <h2 className="text-3xl font-bold mb-2 text-text-primary">Welcome Back</h2>
+        <p className="text-text-secondary mb-8">Sign in to continue your journey of innovation.</p>
+      </div>
       <div className="space-y-4">
         <button
           onClick={handleGoogleLogin}
@@ -123,11 +134,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const renderEmailStep = () => (
     <>
-      <button onClick={() => setStep('initial')} className="absolute top-6 left-6 p-2 rounded-full hover:bg-black/10 transition-colors text-text-primary" aria-label="Go back">
-        <ArrowLeftIcon className="w-6 h-6" />
-      </button>
-      <h2 className="text-3xl font-bold mb-2 text-text-primary">Enter your Email</h2>
-      <p className="text-text-secondary mb-6">We'll send a verification code to sign you in.</p>
+      <div className="text-center md:text-left">
+        <h2 className="text-3xl font-bold mb-2 text-text-primary">Enter your Email</h2>
+        <p className="text-text-secondary mb-6">We'll send a verification code to sign you in.</p>
+      </div>
       <form onSubmit={handleEmailSubmit} className="space-y-4">
         <input
           type="email"
@@ -151,13 +161,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const renderCodeStep = () => (
     <>
-      <button onClick={() => setStep('email')} className="absolute top-6 left-6 p-2 rounded-full hover:bg-black/10 transition-colors text-text-primary" aria-label="Go back">
-        <ArrowLeftIcon className="w-6 h-6" />
-      </button>
-      <h2 className="text-3xl font-bold mb-2 text-text-primary">Check your Email</h2>
-       <p className="text-text-secondary mb-2">We've sent a code to:</p>
-      <p className="font-bold text-text-primary mb-6 break-all">{email}</p>
+      <div className="text-center md:text-left">
+        <h2 className="text-3xl font-bold mb-2 text-text-primary">Check your Email</h2>
+        <p className="text-text-secondary mb-2">We've sent a code to:</p>
+        <p className="font-bold text-text-primary mb-6 break-all">{email}</p>
+      </div>
       
+      {/* For demonstration purposes, show the code on the screen */}
       <div className="p-3 mb-4 text-sm text-center bg-blue-500/10 text-blue-800 dark:text-blue-200 rounded-lg">
         For demonstration: your code is <strong className="font-bold">{verificationCode}</strong>
       </div>
@@ -167,8 +177,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder={verificationCode}
-          className="w-full p-3 text-center tracking-[0.5em] font-mono text-lg bg-bg-input border border-border-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow text-text-primary"
+          placeholder="______"
+          className="w-full p-3 text-center tracking-[0.5em] font-mono text-lg bg-bg-input border border-border-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow text-text-primary placeholder:tracking-widest"
           maxLength={6}
           required
           autoFocus
@@ -186,7 +196,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-bg-primary text-text-primary">
-      {/* Branding Section (Left) */}
+      {/* Branding Section (Left - hidden on mobile) */}
       <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-12 text-center">
         <BotIcon className="w-40 h-40 animate-float" />
         <h1 className="text-5xl font-bold mt-6">Innovation AI</h1>
@@ -194,11 +204,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       </div>
 
       {/* Form Section (Right) */}
-      <div className="flex flex-col justify-center w-full md:w-1/2 p-8 relative">
+      <div className="flex flex-col justify-start md:justify-center w-full md:w-1/2 p-8 relative pt-20 md:pt-8">
+        {step !== 'initial' && (
+            <button onClick={() => setStep(step === 'code' ? 'email' : 'initial')} className="absolute top-6 left-6 p-2 rounded-full hover:bg-bg-tertiary transition-colors text-text-primary" aria-label="Go back">
+                <ArrowLeftIcon className="w-6 h-6" />
+            </button>
+        )}
         <div className="w-full max-w-sm mx-auto">
+          {/* Mobile Header */}
+          <div className="md:hidden text-center mb-10">
+            <BotIcon className="w-20 h-20 mx-auto text-blue-600 animate-float" />
+            <h1 className="text-3xl font-bold mt-4 text-text-primary">Innovation AI</h1>
+          </div>
+
           {step === 'initial' && renderInitialStep()}
           {step === 'email' && renderEmailStep()}
           {step === 'code' && renderCodeStep()}
+          
           <p className="mt-8 text-xs text-text-secondary text-center">
             By signing in, you agree to our{' '}
             <a href="terms.html" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-primary transition-colors">

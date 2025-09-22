@@ -7,7 +7,7 @@ import type { Message, ChatSession, User, Theme, VoiceOption, AIModel, Topic, Gr
 import type { Chat } from '@google/genai';
 
 // Services
-import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt, refineVideoPrompt, refineAnimationPrompt } from './services/geminiService';
+import { createChat, generateChatResponseStream, generateTitle, generateImage, editImage, generateVideo, getVideosOperation, refineVisualPrompt, refineVideoPrompt, refineAnimationPrompt, generateSuggestions } from './services/geminiService';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -39,6 +39,7 @@ import AddToBoardIcon from './components/icons/AddToBoardIcon';
 import PencilIcon from './components/icons/PencilIcon';
 import TermsModal from './components/TermsModal';
 import PdfIcon from './components/icons/PdfIcon';
+import SuggestionChips from './components/SuggestionChips';
 
 // Hooks
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -135,7 +136,7 @@ const App: React.FC = () => {
     const [hasSeenAboutModal, setHasSeenAboutModal] = useState(() => localStorage.getItem('hasSeenAboutModal') === 'true');
     const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
     const [theme, setTheme] = useState<Theme>('light');
-    const [voice, setVoice] = useState<VoiceOption>('male-robot');
+    const [voice, setVoice] = useState<VoiceOption>('female');
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
     const [isClearConfirmModalOpen, setClearConfirmModalOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
@@ -156,6 +157,7 @@ const App: React.FC = () => {
     const speechRecognition = useRef<SpeechRecognition | null>(null);
     const editTextAreaRef = useRef<HTMLTextAreaElement>(null);
     const initialCheckCompleted = useRef(false);
+    const chatSessionsRef = useRef(chatSessions);
 
 
     // Custom Hooks
@@ -168,6 +170,10 @@ const App: React.FC = () => {
     
     // Effects
     useEffect(() => {
+        chatSessionsRef.current = chatSessions;
+    }, [chatSessions]);
+
+    useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) setUser(JSON.parse(storedUser));
         
@@ -178,6 +184,18 @@ const App: React.FC = () => {
         } else {
              document.documentElement.setAttribute('data-theme', 'light');
         }
+    }, []);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth <= 768) {
+                setSidebarOpen(false);
+            } else {
+                setSidebarOpen(true);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
@@ -562,6 +580,18 @@ const App: React.FC = () => {
                 updateAIMessage(aiMessageId, { text: `Sorry, I ran into an error: ${getFriendlyErrorMessage(error)}`, loading: false });
             } finally {
                 setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
+                
+                // Use a timeout to ensure the state update from streaming is processed before generating suggestions.
+                setTimeout(async () => {
+                    const finalCurrentSession = chatSessionsRef.current.find(s => s.id === currentSession.id);
+                    if (finalCurrentSession && finalCurrentSession.messages.length > 0) {
+                        const suggestions = await generateSuggestions(finalCurrentSession.messages);
+                        if (suggestions.length > 0) {
+                            updateAIMessage(aiMessageId, { suggestions });
+                        }
+                    }
+                }, 0);
+
                 const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
                 if (shouldGenerateTitle) {
                     generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
@@ -872,7 +902,6 @@ const App: React.FC = () => {
                     setEditingSessionId={setEditingSessionId}
                     isSidebarOpen={isSidebarOpen}
                     isCollapsed={isCollapsed}
-                    // FIX: Pass the correct handler function `handleToggleCollapse` to the `toggleCollapse` prop.
                     toggleCollapse={handleToggleCollapse}
                     user={user}
                     onLogout={handleLogout}
@@ -929,8 +958,7 @@ const App: React.FC = () => {
                                         }
                                         return currentSession.messages.map((msg, index) => {
                                             const isLastUserMessage = index === lastUserMessageIndex;
-                                            const isLastAiMessage = msg.id === lastAiMessage?.id;
-                                            const isStreaming = !!currentSession.isLoading && isLastAiMessage && currentSession.modelId === 'gemini-2.5-flash';
+                                            const isLastAiMessageInHistory = msg.id === lastAiMessage?.id;
                                             const hasContent = (msg.text && msg.text.trim().length > 0) || msg.imageUrl || msg.videoUrl;
 
                                             return (
@@ -948,7 +976,7 @@ const App: React.FC = () => {
                                                             px-5 py-4 rounded-2xl border transition-all
                                                             ${msg.sender === 'user'
                                                                 ? 'bg-bg-accent text-text-on-accent rounded-br-lg border-transparent'
-                                                                : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary shadow-md`
+                                                                : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary`
                                                             }
                                                         `}>
                                                             <div className={`max-w-none prose ${msg.sender === 'user' ? 'prose-invert' : ''}`}>
@@ -960,7 +988,7 @@ const App: React.FC = () => {
                                                                 ) : msg.loading ? (
                                                                     <LoadingSpinner />
                                                                 ) : (
-                                                                    <MessageContent text={msg.text} isStreaming={isStreaming} />
+                                                                    <MessageContent text={msg.text} isStreaming={msg.loading === 'text'} />
                                                                 )}
                                                                 {msg.imageUrl && (
                                                                      <div className="mt-2 relative">
@@ -1002,7 +1030,7 @@ const App: React.FC = () => {
                                                                 <button onClick={() => handleAddToBoard(msg.text)} title="Add to Brainstorm Board" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                   <AddToBoardIcon className="w-4 h-4" />
                                                                 </button>
-                                                                {isLastAiMessage && !currentSession.isLoading && (
+                                                                {isLastAiMessageInHistory && !currentSession.isLoading && (
                                                                     <button onClick={handleRegenerate} title="Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                         <RegenerateIcon className="w-4 h-4" />
                                                                     </button>
@@ -1015,6 +1043,12 @@ const App: React.FC = () => {
                                                                     <PencilIcon className="w-4 h-4" />
                                                                 </button>
                                                             </div>
+                                                        )}
+                                                        {isLastAiMessageInHistory && !currentSession.isLoading && msg.suggestions && msg.suggestions.length > 0 && (
+                                                            <SuggestionChips
+                                                                suggestions={msg.suggestions}
+                                                                onSelect={(suggestion) => handleSendMessage(suggestion)}
+                                                            />
                                                         )}
                                                     </div>
 

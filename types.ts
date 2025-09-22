@@ -20,6 +20,7 @@ export interface Message {
     size?: number;
   };
   groundingChunks?: GroundingChunk[];
+  suggestions?: string[];
   loading?: 'image' | 'video' | 'text' | false;
 }
 

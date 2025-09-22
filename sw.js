@@ -21,6 +21,7 @@ const urlsToCache = [
   '/components/Greeting.tsx',
   '/components/TermsModal.tsx',
   '/components/AboutModal.tsx',
+  '/components/SuggestionChips.tsx',
   '/components/icons/ArrowLeftIcon.tsx',
   '/components/icons/BotIcon.tsx',
   '/components/icons/CheckIcon.tsx',

@@ -86,16 +86,14 @@ const renderFormattedText = (text: string) => {
 
 const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming = false }) => {
   const [displayedText, setDisplayedText] = useState('');
-  const animationFrameId = useRef<number | null>(null);
+  const animationTimer = useRef<number | null>(null);
   const textRef = useRef(text);
   textRef.current = text;
 
-  // Character-by-character streaming animation effect.
+  // Letter-by-letter streaming animation effect.
   useEffect(() => {
     if (!isStreaming) {
-      if (animationFrameId.current) {
-        clearTimeout(animationFrameId.current);
-      }
+      if (animationTimer.current) clearTimeout(animationTimer.current);
       setDisplayedText(text);
       return;
     }
@@ -107,32 +105,32 @@ const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ tex
 
     const animate = () => {
       setDisplayedText(current => {
-        if (current.length >= textRef.current.length) {
-          // Animation is complete for the current text prop.
+        const fullText = textRef.current;
+        if (current.length >= fullText.length) {
+          // Animation complete for the current text prop.
           return current;
         }
         
-        // Add the next character.
-        const nextChar = textRef.current[current.length];
-        const newText = current + nextChar;
+        // Reveal the text one character at a time for a "letter by letter" effect.
+        const newText = fullText.substring(0, current.length + 1);
 
-        // Schedule the next frame.
-        animationFrameId.current = window.setTimeout(animate, 15); // 15ms delay per character for a smooth typing effect.
+        // Schedule the next frame. A small delay creates the animation effect.
+        animationTimer.current = window.setTimeout(animate, 25);
         return newText;
       });
     };
 
     // Clear any existing animation timer before starting a new one.
-    if (animationFrameId.current) {
-      clearTimeout(animationFrameId.current);
+    if (animationTimer.current) {
+      clearTimeout(animationTimer.current);
     }
     animate();
 
     // Cleanup function to stop animation when component unmounts or dependencies change.
     return () => {
-      if (animationFrameId.current) {
-        clearTimeout(animationFrameId.current);
-        animationFrameId.current = null;
+      if (animationTimer.current) {
+        clearTimeout(animationTimer.current);
+        animationTimer.current = null;
       }
     };
   }, [text, isStreaming]);

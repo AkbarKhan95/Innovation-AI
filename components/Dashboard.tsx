@@ -108,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isOpen, onClose, chatSessions, th
                   {/* Profile Card */}
                   <Card title="Profile">
                       <div className="flex flex-col items-center text-center">
-                        <div className="relative group w-20 h-20 mb-4">
+                        <div className="relative group w-20 h-20 mb-4 rounded-full overflow-hidden">
                             {user.picture ? (
                                 <img src={user.picture} alt={user.name} className="w-20 h-20 rounded-full object-cover" />
                             ) : (

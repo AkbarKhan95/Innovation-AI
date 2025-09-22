@@ -5,7 +5,10 @@
     "react": "https://aistudiocdn.com/react@^19.1.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.3",
+    "vite": "https://aistudiocdn.com/vite@^7.1.6",
+    "path": "https://aistudiocdn.com/path@^0.12.7"
   }
 }
 </script>
@@ -21,7 +24,7 @@
       /* CSS Color Variables for Theming */
       :root, [data-theme="light"] {
         --bg-primary: #f7f8fa; /* A slightly cooler off-white */
-        --bg-secondary: #f3f4f6; /* A light grey for bubbles and panels */
+        --bg-secondary: rgba(243, 244, 246, 0.85); /* A semi-transparent light grey for bubbles and panels */
         --bg-tertiary: #eef0f2; /* Lighter gray for hover states */
         --bg-tertiary-hover: #e5e7eb; /* gray-200 */
         --bg-input: #ffffff; /* Input background, now white */
@@ -38,7 +41,7 @@
       }
       [data-theme="dark"] {
         --bg-primary: #111827; /* gray-900 */
-        --bg-secondary: #1f2937; /* gray-800 */
+        --bg-secondary: rgba(31, 41, 55, 0.85); /* A semi-transparent dark grey for bubbles and panels */
         --bg-tertiary: #374151; /* gray-700 */
         --bg-tertiary-hover: #4b5563; /* gray-600 */
         --bg-input: #1f2937; /* gray-800 */
@@ -244,24 +247,31 @@
       .prose h2 {
         font-size: 1.35em;
         margin-top: 2.5em; /* More space before section headings */
-        margin-bottom: 1.25em; /* Increased bottom margin for spacing */
+        margin-bottom: 1.5em; /* Increased bottom margin for spacing */
         padding-bottom: 0.5em;
         border-bottom: 1px solid var(--border-primary);
       }
       .prose h3 {
         font-size: 1.15em;
         margin-top: 2em; /* Space before sub-headings */
-        margin-bottom: 1em; /* Increased bottom margin */
+        margin-bottom: 1.25em; /* Increased bottom margin */
       }
       .prose p, .prose ol, .prose ul {
         line-height: 1.75;
+      }
+      /* Add vertical spacing between consecutive block elements for better readability */
+      .prose p + p,
+      .prose ul + p, .prose ol + p,
+      .prose p + ul, .prose p + ol,
+      .prose ul + ul, .prose ul + ol, .prose ol + ol, .prose ol + ul {
+          margin-top: 1em;
       }
       /* Add extra space between list items for better readability */
       .prose ul, .prose ol {
         padding-left: 1.5rem; /* Indent lists properly */
       }
       .prose ul li, .prose ol li {
-          margin-top: 0.75em; /* Increased spacing between list items */
+          margin-top: 0.8em; /* Increased spacing between list items */
           padding-left: 0.25em; /* Space between marker and text */
       }
       /* Style list markers to be more prominent */
@@ -269,8 +279,8 @@
           color: var(--bg-accent);
           font-weight: 600;
       }
-      /* Ensure paragraphs following headings have some space (now handled by heading margin-bottom) */
-      .prose h1 + p, .prose h2 + p, .prose h3 + p {
+      /* Headings provide their own bottom margin, so no extra top margin is needed for the following element */
+      .prose h1 + *, .prose h2 + *, .prose h3 + * {
           margin-top: 0;
       }
 
