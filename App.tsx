@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 
 // Types
@@ -126,6 +124,7 @@ const App: React.FC = () => {
     // State
     const [user, setUser] = useState<User | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(() => localStorage.getItem('termsAccepted') === 'true');
+    const [isTermsModalOpen, setIsTermsModalOpen] = useState(!termsAccepted);
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
@@ -205,9 +204,17 @@ const App: React.FC = () => {
         }
     }, [user]);
 
+    // Debounced effect to save chat sessions to local storage.
+    // This prevents the app from hanging by avoiding rapid, successive writes during streaming.
     useEffect(() => {
         if (user) {
-            localStorage.setItem(`sessions-${user.email}`, JSON.stringify(chatSessions));
+            const saveTimeout = setTimeout(() => {
+                localStorage.setItem(`sessions-${user.email}`, JSON.stringify(chatSessions));
+            }, 100); // Debounce save operation by 100ms
+
+            return () => {
+                clearTimeout(saveTimeout);
+            };
         }
     }, [chatSessions, user]);
 
@@ -304,6 +311,7 @@ const App: React.FC = () => {
     const handleAcceptTerms = () => {
         localStorage.setItem('termsAccepted', 'true');
         setTermsAccepted(true);
+        setIsTermsModalOpen(false);
     };
     
     const handleLogin = (loggedInUser: User) => {
@@ -880,270 +888,275 @@ const App: React.FC = () => {
         }
     };
 
-    if (!termsAccepted) {
-        return <TermsModal onAccept={handleAcceptTerms} />;
-    }
-
-    if (!user) {
-        return <LoginPage onLogin={handleLogin} />;
-    }
-
     return (
         <div className="flex h-screen bg-bg-primary text-text-primary overflow-hidden font-sans">
-            <div className={`${isBoardOpen ? 'md:hidden' : ''}`}>
-                <Sidebar
-                    chatSessions={chatSessions}
-                    currentSessionId={currentSessionId}
-                    onNewChat={() => handleNewChat()}
-                    onSelectChat={handleSelectChat}
-                    onDeleteChat={handleDeleteChat}
-                    onRenameChat={handleRenameChat}
-                    editingSessionId={editingSessionId}
-                    setEditingSessionId={setEditingSessionId}
-                    isSidebarOpen={isSidebarOpen}
-                    isCollapsed={isCollapsed}
-                    toggleCollapse={handleToggleCollapse}
-                    user={user}
-                    onLogout={handleLogout}
-                    onGoToHome={handleGoToHome}
-                    onOpenSettings={handleOpenDashboard}
-                />
-            </div>
+            <TermsModal
+                isOpen={isTermsModalOpen}
+                onAccept={handleAcceptTerms}
+                onClose={() => setIsTermsModalOpen(false)}
+                showAcceptButton={!termsAccepted}
+            />
 
-            <main className={`flex-1 flex flex-col transition-all duration-[400ms] ease-in-out origin-left ${
-                isBoardOpen ? 'md:ml-0' : (isCollapsed ? 'md:ml-20' : 'md:ml-80')
-            }`}>
-                 {!currentSession ? (
-                    <>
-                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
-                            <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
-                                <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
-                            </button>
-                            <h1 className="text-lg font-semibold truncate text-text-primary text-center">
-                                Innovation AI
-                            </h1>
-                        </header>
-                        <ModelSelector onSelectModel={handleNewChat} onPromptWithTopic={handlePromptWithTopic} onOpenAbout={handleOpenAboutModal} />
-                    </>
-                ) : (
-                    <div className="flex flex-col h-full">
-                        {/* Chat Header */}
-                        <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
-                            <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
-                                <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
-                            </button>
-                            <h1 className="text-lg font-semibold truncate text-text-primary text-center">
-                                {currentSession.title}
-                            </h1>
-                            <button onClick={handleOpenBoard} className="absolute right-3 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-tertiary-hover transition-colors text-sm font-medium">
-                                <BrainstormIcon className="w-5 h-5"/>
-                                <span className="hidden sm:inline">Brainstorm Board</span>
-                            </button>
-                        </header>
-                        
-                        {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto">
-                           <div className="max-w-4xl mx-auto px-4 py-6">
-                            {currentSession.messages.length === 0 && !currentSession.isLoading ? (
-                                <Greeting user={user} onPromptWithTopic={handlePromptWithTopic} />
-                            ) : (
-                                <div className="space-y-10">
-                                    {(() => {
-                                        let lastUserMessageIndex = -1;
-                                        for (let i = currentSession.messages.length - 1; i >= 0; i--) {
-                                            if (currentSession.messages[i].sender === 'user') {
-                                                lastUserMessageIndex = i;
-                                                break;
+            {!user ? (
+                <LoginPage onLogin={handleLogin} onViewTerms={() => setIsTermsModalOpen(true)} />
+            ) : (
+            <>
+                <div className={`${isBoardOpen ? 'md:hidden' : ''}`}>
+                    <Sidebar
+                        chatSessions={chatSessions}
+                        currentSessionId={currentSessionId}
+                        onNewChat={() => handleNewChat()}
+                        onSelectChat={handleSelectChat}
+                        onDeleteChat={handleDeleteChat}
+                        onRenameChat={handleRenameChat}
+                        editingSessionId={editingSessionId}
+                        setEditingSessionId={setEditingSessionId}
+                        isSidebarOpen={isSidebarOpen}
+                        isCollapsed={isCollapsed}
+                        toggleCollapse={handleToggleCollapse}
+                        user={user}
+                        onLogout={handleLogout}
+                        onGoToHome={handleGoToHome}
+                        onOpenSettings={handleOpenDashboard}
+                    />
+                </div>
+
+                <main className={`flex-1 flex flex-col transition-all duration-[400ms] ease-in-out origin-left ${
+                    isBoardOpen ? 'md:ml-0' : (isCollapsed ? 'md:ml-20' : 'md:ml-80')
+                }`}>
+                    {!currentSession ? (
+                        <>
+                            <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
+                                <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
+                                    <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
+                                </button>
+                                <h1 className="text-lg font-semibold truncate text-text-primary text-center">
+                                    Innovation AI
+                                </h1>
+                            </header>
+                            <ModelSelector onSelectModel={handleNewChat} onPromptWithTopic={handlePromptWithTopic} onOpenAbout={handleOpenAboutModal} />
+                        </>
+                    ) : (
+                        <div className="flex flex-col h-full">
+                            {/* Chat Header */}
+                            <header className="flex-shrink-0 flex items-center justify-center p-3 border-b border-border-primary bg-bg-secondary backdrop-blur-sm relative">
+                                <button onClick={handleToggleSidebar} className="absolute left-3 p-2 rounded-full hover:bg-bg-tertiary-hover md:hidden">
+                                    <MenuIcon className="w-6 h-6 text-text-secondary" isOpen={isSidebarOpen} />
+                                </button>
+                                <h1 className="text-lg font-semibold truncate text-text-primary text-center">
+                                    {currentSession.title}
+                                </h1>
+                                <button onClick={handleOpenBoard} className="absolute right-3 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-tertiary-hover transition-colors text-sm font-medium">
+                                    <BrainstormIcon className="w-5 h-5"/>
+                                    <span className="hidden sm:inline">Brainstorm Board</span>
+                                </button>
+                            </header>
+                            
+                            {/* Messages Area */}
+                            <div className="flex-1 overflow-y-auto">
+                            <div className="max-w-4xl mx-auto px-4 py-6">
+                                {currentSession.messages.length === 0 && !currentSession.isLoading ? (
+                                    <Greeting user={user} onPromptWithTopic={handlePromptWithTopic} />
+                                ) : (
+                                    <div className="space-y-10">
+                                        {(() => {
+                                            let lastUserMessageIndex = -1;
+                                            for (let i = currentSession.messages.length - 1; i >= 0; i--) {
+                                                if (currentSession.messages[i].sender === 'user') {
+                                                    lastUserMessageIndex = i;
+                                                    break;
+                                                }
                                             }
-                                        }
-                                        return currentSession.messages.map((msg, index) => {
-                                            const isLastUserMessage = index === lastUserMessageIndex;
-                                            const isLastAiMessageInHistory = msg.id === lastAiMessage?.id;
-                                            const hasContent = (msg.text && msg.text.trim().length > 0) || msg.imageUrl || msg.videoUrl;
+                                            return currentSession.messages.map((msg, index) => {
+                                                const isLastUserMessage = index === lastUserMessageIndex;
+                                                const isLastAiMessageInHistory = msg.id === lastAiMessage?.id;
+                                                const hasContent = (msg.text && msg.text.trim().length > 0) || msg.imageUrl || msg.videoUrl;
 
-                                            return (
-                                                <div key={msg.id} className={`flex w-full items-start gap-3 animate-bubble-in ${ msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                    
-                                                    {msg.sender === 'ai' && (
-                                                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
-                                                        <BotIcon className="w-7 h-7 text-bg-accent" />
-                                                      </div>
-                                                    )}
-
-                                                    <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-xl group ${ msg.sender === 'user' ? 'items-end' : 'items-start' }`}>
+                                                return (
+                                                    <div key={msg.id} className={`flex w-full items-start gap-3 animate-bubble-in ${ msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                                         
-                                                        <div className={`
-                                                            px-5 py-4 rounded-2xl border transition-all
-                                                            ${msg.sender === 'user'
-                                                                ? 'bg-bg-accent text-text-on-accent rounded-br-lg border-transparent'
-                                                                : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary`
-                                                            }
-                                                        `}>
-                                                            <div className={`max-w-none prose ${msg.sender === 'user' ? 'prose-invert' : ''}`}>
-                                                                {msg.loading === 'video' ? (
-                                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
-                                                                        <p className="text-text-secondary text-sm mb-2 animate-fade-in">{videoLoadingMessage}</p>
-                                                                        <LoadingSpinner />
-                                                                    </div>
-                                                                ) : msg.loading ? (
-                                                                    <LoadingSpinner />
-                                                                ) : (
-                                                                    <MessageContent text={msg.text} isStreaming={msg.loading === 'text'} />
-                                                                )}
-                                                                {msg.imageUrl && (
-                                                                     <div className="mt-2 relative">
-                                                                        {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
-                                                                        <img src={msg.imageUrl} alt="Generated content" className="rounded-lg w-full h-auto" />
-                                                                        <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.png`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
-                                                                     </div>
-                                                                )}
-                                                                {msg.videoUrl && (
-                                                                     <div className="mt-2 relative">
-                                                                        <video src={msg.videoUrl} controls className="rounded-lg w-full h-auto"></video>
-                                                                        <a href={msg.videoUrl} download={`innovation-ai-video-${msg.id}.mp4`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
-                                                                     </div>
-                                                                )}
-                                                                 {msg.file && msg.sender === 'user' && (
-                                                                    <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
-                                                                        {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : msg.file.type === 'application/pdf' ? <PdfIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
-                                                                        <span className="text-sm truncate">{msg.file.name}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {msg.sender === 'ai' && msg.groundingChunks && msg.groundingChunks.length > 0 && <GroundingSources chunks={msg.groundingChunks} />}
+                                                        {msg.sender === 'ai' && (
+                                                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
+                                                            <BotIcon className="w-7 h-7 text-bg-accent" />
                                                         </div>
-                                                        
-                                                        {msg.sender === 'ai' && hasContent && !msg.loading && (
-                                                            <div className="flex w-full justify-end items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleCopy(msg.text, msg.id)} title="Copy" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                    {copiedMessageId === msg.id ? <CheckIcon className="w-4 h-4 text-green-500" /> : <CopyIcon className="w-4 h-4" />}
-                                                                </button>
-                                                                 <button onClick={() => toggleReadAloud(msg)} title={speakingMessageId === msg.id ? "Stop" : "Read Aloud"} className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                    {speakingMessageId === msg.id ? <StopIcon className="w-4 h-4 text-bg-accent" /> : <SpeakerIcon className="w-4 h-4" />}
-                                                                </button>
-                                                                <button onClick={() => handleVisualize(msg.text)} title="Visualize Idea" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                  <ImageIcon className="w-4 h-4" />
-                                                                </button>
-                                                                 <button onClick={() => handleConvertToVideo(msg.text)} title="Create Video" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                  <VideoIcon className="w-4 h-4" />
-                                                                </button>
-                                                                <button onClick={() => handleAddToBoard(msg.text)} title="Add to Brainstorm Board" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                  <AddToBoardIcon className="w-4 h-4" />
-                                                                </button>
-                                                                {isLastAiMessageInHistory && !currentSession.isLoading && (
-                                                                    <button onClick={handleRegenerate} title="Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                        <RegenerateIcon className="w-4 h-4" />
+                                                        )}
+
+                                                        <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-xl group ${ msg.sender === 'user' ? 'items-end' : 'items-start' }`}>
+                                                            
+                                                            <div className={`
+                                                                px-5 py-4 rounded-2xl border transition-all
+                                                                ${msg.sender === 'user'
+                                                                    ? 'bg-bg-accent text-text-on-accent rounded-br-lg border-transparent'
+                                                                    : `bg-bg-secondary text-text-primary rounded-bl-lg border-border-primary`
+                                                                }
+                                                            `}>
+                                                                <div className="max-w-none">
+                                                                    {msg.loading === 'video' ? (
+                                                                        <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                                            <p className="text-text-secondary text-sm mb-2 animate-fade-in">{videoLoadingMessage}</p>
+                                                                            <LoadingSpinner />
+                                                                        </div>
+                                                                    ) : msg.loading ? (
+                                                                        <LoadingSpinner />
+                                                                    ) : (
+                                                                        <MessageContent text={msg.text} isStreaming={msg.loading === 'text'} sender={msg.sender} />
+                                                                    )}
+                                                                    {msg.imageUrl && (
+                                                                        <div className="mt-2 relative">
+                                                                            {msg.loading === 'image' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"><LoadingSpinner /></div>}
+                                                                            <img src={msg.imageUrl} alt="Generated content" className="rounded-lg w-full h-auto" />
+                                                                            <a href={msg.imageUrl} download={`innovation-ai-image-${msg.id}.png`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
+                                                                        </div>
+                                                                    )}
+                                                                    {msg.videoUrl && (
+                                                                        <div className="mt-2 relative">
+                                                                            <video src={msg.videoUrl} controls className="rounded-lg w-full h-auto"></video>
+                                                                            <a href={msg.videoUrl} download={`innovation-ai-video-${msg.id}.mp4`} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"><DownloadIcon className="w-4 h-4" /></a>
+                                                                        </div>
+                                                                    )}
+                                                                    {msg.file && msg.sender === 'user' && (
+                                                                        <div className="mt-2 p-2 bg-black/20 rounded-lg flex items-center gap-2 max-w-xs">
+                                                                            {msg.file.type.startsWith('image/') ? <ImageIcon className="w-5 h-5" /> : msg.file.type === 'application/pdf' ? <PdfIcon className="w-5 h-5" /> : <FileIcon className="w-5 h-5" />}
+                                                                            <span className="text-sm truncate">{msg.file.name}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {msg.sender === 'ai' && msg.groundingChunks && msg.groundingChunks.length > 0 && <GroundingSources chunks={msg.groundingChunks} />}
+                                                            </div>
+                                                            
+                                                            {msg.sender === 'ai' && hasContent && !msg.loading && (
+                                                                <div className="flex w-full justify-end items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                                                    <button onClick={() => handleCopy(msg.text, msg.id)} title="Copy" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                        {copiedMessageId === msg.id ? <CheckIcon className="w-4 h-4 text-green-500" /> : <CopyIcon className="w-4 h-4" />}
                                                                     </button>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {msg.sender === 'user' && isLastUserMessage && !currentSession.isLoading && !editingMessage && (
-                                                            <div className="flex justify-end items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleStartEdit(msg)} title="Edit & Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
-                                                                    <PencilIcon className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                        {isLastAiMessageInHistory && !currentSession.isLoading && msg.suggestions && msg.suggestions.length > 0 && (
-                                                            <SuggestionChips
-                                                                suggestions={msg.suggestions}
-                                                                onSelect={(suggestion) => handleSendMessage(suggestion)}
-                                                            />
+                                                                    <button onClick={() => toggleReadAloud(msg)} title={speakingMessageId === msg.id ? "Stop" : "Read Aloud"} className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                        {speakingMessageId === msg.id ? <StopIcon className="w-4 h-4 text-bg-accent" /> : <SpeakerIcon className="w-4 h-4" />}
+                                                                    </button>
+                                                                    <button onClick={() => handleVisualize(msg.text)} title="Visualize Idea" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                    <ImageIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button onClick={() => handleConvertToVideo(msg.text)} title="Create Video" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                    <VideoIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button onClick={() => handleAddToBoard(msg.text)} title="Add to Brainstorm Board" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                    <AddToBoardIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                    {isLastAiMessageInHistory && !currentSession.isLoading && (
+                                                                        <button onClick={handleRegenerate} title="Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                            <RegenerateIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {msg.sender === 'user' && isLastUserMessage && !currentSession.isLoading && !editingMessage && (
+                                                                <div className="flex justify-end items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                                                    <button onClick={() => handleStartEdit(msg)} title="Edit & Regenerate" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                        <PencilIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {isLastAiMessageInHistory && !currentSession.isLoading && msg.suggestions && msg.suggestions.length > 0 && (
+                                                                <SuggestionChips
+                                                                    suggestions={msg.suggestions}
+                                                                    onSelect={(suggestion) => handleSendMessage(suggestion)}
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        {msg.sender === 'user' && (
+                                                            user.picture ? (
+                                                                <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
+                                                                    <span className="text-lg font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
+                                                                </div>
+                                                            )
                                                         )}
                                                     </div>
-
-                                                    {msg.sender === 'user' && (
-                                                        user.picture ? (
-                                                            <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                                                        ) : (
-                                                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-tertiary">
-                                                                <span className="text-lg font-bold text-bg-accent">{user.name.charAt(0).toUpperCase()}</span>
-                                                            </div>
-                                                        )
-                                                    )}
-                                                </div>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                           </div>
-                        </div>
-
-                        {/* Input Area */}
-                        <div className="flex-shrink-0 p-4 bg-bg-primary">
-                            <div className="max-w-4xl mx-auto">
-                               <div className="mb-3 flex justify-center">
-                                    <ChatModelSwitcher 
-                                        currentModelId={currentSession.modelId || 'gemini-2.5-flash'}
-                                        onSelectModel={handleModelChange}
-                                        disabled={!!currentSession.isLoading}
-                                    />
-                               </div>
-                               {attachedFile && attachedFile.type === 'application/pdf' && !currentSession.isLoading && (
-                                    <div className="flex items-center justify-center gap-2 mb-2 animate-fade-in">
-                                        <button
-                                            type="button"
-                                            onClick={() => handlePdfQuickAction('Summarize this document.')}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
-                                        >
-                                            Summarize Document
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handlePdfQuickAction('Extract key points from this document as a bulleted list.')}
-                                            className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
-                                        >
-                                            Extract Key Points
-                                        </button>
+                                                );
+                                            });
+                                        })()}
                                     </div>
                                 )}
-                               <form onSubmit={handleFormSubmit}>
-                                   <div className="flex flex-col p-2 bg-bg-secondary border border-border-primary rounded-2xl focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
-                                        {attachedFile && (
-                                            <div className="flex items-center gap-2 p-1.5 mb-2 mx-2 bg-bg-tertiary rounded-md max-w-xs animate-fade-in">
-                                                {attachedFile.type.startsWith('image/') ? <ImageIcon className="w-5 h-5 text-text-secondary" /> : attachedFile.type === 'application/pdf' ? <PdfIcon className="w-5 h-5 text-text-secondary" /> : <FileIcon className="w-5 h-5 text-text-secondary" />}
-                                                <span className="text-sm text-text-secondary truncate">{attachedFile.name}</span>
-                                                <button type="button" onClick={() => setAttachedFile(null)} className="p-0.5 rounded-full hover:bg-bg-tertiary-hover">
-                                                    <XIcon className="w-4 h-4 text-text-secondary"/>
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div className="flex items-end gap-2">
-                                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary-hover text-text-secondary flex-shrink-0" aria-label="Attach file">
-                                                <PaperclipIcon className="w-5 h-5" />
-                                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*,application/pdf,.txt,.md,.csv" />
+                                <div ref={messagesEndRef} />
+                            </div>
+                            </div>
+
+                            {/* Input Area */}
+                            <div className="flex-shrink-0 p-4 bg-bg-primary">
+                                <div className="max-w-4xl mx-auto">
+                                <div className="mb-3 flex justify-center">
+                                        <ChatModelSwitcher 
+                                            currentModelId={currentSession.modelId || 'gemini-2.5-flash'}
+                                            onSelectModel={handleModelChange}
+                                            disabled={!!currentSession.isLoading}
+                                        />
+                                </div>
+                                {attachedFile && attachedFile.type === 'application/pdf' && !currentSession.isLoading && (
+                                        <div className="flex items-center justify-center gap-2 mb-2 animate-fade-in">
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePdfQuickAction('Summarize this document.')}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
+                                            >
+                                                Summarize Document
                                             </button>
-                                            <textarea
-                                                ref={textareaRef}
-                                                value={prompt}
-                                                onChange={(e) => setPrompt(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault();
-                                                        handleFormSubmit(e);
-                                                    }
-                                                }}
-                                                placeholder={isRecording ? 'Listening...' : attachedFile && attachedFile.type === 'application/pdf' ? 'Ask a question about the PDF or use a quick action...' : attachedFile ? `Describe what to do with ${attachedFile.name}...` : `Ask anything or drop a file...`}
-                                                className="flex-1 bg-transparent resize-none border-none focus:outline-none max-h-48 text-text-primary placeholder:text-text-secondary py-2"
-                                                rows={1}
-                                                disabled={!!currentSession.isLoading}
-                                            />
-                                            <button type="button" onClick={handleToggleRecording} className={`p-2 rounded-full hover:bg-bg-tertiary-hover flex-shrink-0 ${isRecording ? 'text-red-500' : 'text-text-secondary'}`} aria-label={isRecording ? 'Stop recording' : 'Start recording'}>
-                                                <MicrophoneIcon className="w-5 h-5" />
-                                            </button>
-                                            <button type="submit" disabled={!!currentSession.isLoading || (!prompt.trim() && !attachedFile)} className="p-2 rounded-full bg-bg-accent text-text-on-accent transition-colors hover:bg-bg-accent-hover disabled:bg-bg-accent-disabled disabled:cursor-not-allowed flex-shrink-0" aria-label="Send message">
-                                                <SendIcon className="w-5 h-5" />
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePdfQuickAction('Extract key points from this document as a bulleted list.')}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-full bg-bg-tertiary hover:bg-bg-tertiary-hover text-text-secondary transition-colors"
+                                            >
+                                                Extract Key Points
                                             </button>
                                         </div>
-                                    </div>
-                               </form>
+                                    )}
+                                <form onSubmit={handleFormSubmit}>
+                                    <div className="flex flex-col p-2 bg-bg-secondary border border-border-primary rounded-2xl focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
+                                            {attachedFile && (
+                                                <div className="flex items-center gap-2 p-1.5 mb-2 mx-2 bg-bg-tertiary rounded-md max-w-xs animate-fade-in">
+                                                    {attachedFile.type.startsWith('image/') ? <ImageIcon className="w-5 h-5 text-text-secondary" /> : attachedFile.type === 'application/pdf' ? <PdfIcon className="w-5 h-5 text-text-secondary" /> : <FileIcon className="w-5 h-5 text-text-secondary" />}
+                                                    <span className="text-sm text-text-secondary truncate">{attachedFile.name}</span>
+                                                    <button type="button" onClick={() => setAttachedFile(null)} className="p-0.5 rounded-full hover:bg-bg-tertiary-hover">
+                                                        <XIcon className="w-4 h-4 text-text-secondary"/>
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="flex items-end gap-2">
+                                                <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-bg-tertiary-hover text-text-secondary flex-shrink-0" aria-label="Attach file">
+                                                    <PaperclipIcon className="w-5 h-5" />
+                                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*,application/pdf,.txt,.md,.csv" />
+                                                </button>
+                                                <textarea
+                                                    ref={textareaRef}
+                                                    value={prompt}
+                                                    onChange={(e) => setPrompt(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleFormSubmit(e);
+                                                        }
+                                                    }}
+                                                    placeholder={isRecording ? 'Listening...' : attachedFile && attachedFile.type === 'application/pdf' ? 'Ask a question about the PDF or use a quick action...' : attachedFile ? `Describe what to do with ${attachedFile.name}...` : `Ask anything or drop a file...`}
+                                                    className="flex-1 bg-transparent resize-none border-none focus:outline-none max-h-48 text-text-primary placeholder:text-text-secondary py-2"
+                                                    rows={1}
+                                                    disabled={!!currentSession.isLoading}
+                                                />
+                                                <button type="button" onClick={handleToggleRecording} className={`p-2 rounded-full hover:bg-bg-tertiary-hover flex-shrink-0 ${isRecording ? 'text-red-500' : 'text-text-secondary'}`} aria-label={isRecording ? 'Stop recording' : 'Start recording'}>
+                                                    <MicrophoneIcon className="w-5 h-5" />
+                                                </button>
+                                                <button type="submit" disabled={!!currentSession.isLoading || (!prompt.trim() && !attachedFile)} className="p-2 rounded-full bg-bg-accent text-text-on-accent transition-colors hover:bg-bg-accent-hover disabled:bg-bg-accent-disabled disabled:cursor-not-allowed flex-shrink-0" aria-label="Send message">
+                                                    <SendIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </main>
+                    )}
+                </main>
+            </>
+            )}
 
             <Suspense fallback={<div className="fixed inset-0 bg-modal-backdrop z-40 flex items-center justify-center"><LoadingSpinner /></div>}>
                 <AboutModal isOpen={isAboutModalOpen} onClose={handleCloseAboutModal} />

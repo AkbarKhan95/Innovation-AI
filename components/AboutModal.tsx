@@ -17,9 +17,9 @@ interface AboutModalProps {
 }
 
 const FeatureSection: React.FC<{ title: string; children: React.ReactNode; iconDisplay: React.ReactNode; reverseOrder?: boolean; }> = ({ title, children, iconDisplay, reverseOrder = false }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center py-6 border-b border-border-primary last:border-b-0">
-        <div className={`prose prose-sm max-w-none text-text-secondary ${reverseOrder ? 'md:order-2' : 'md:order-1'}`}>
-            <h3 className="text-lg font-bold text-text-primary mb-2">{title}</h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center py-6 border-b border-gray-200 last:border-b-0">
+        <div className={`prose prose-sm max-w-none text-gray-600 ${reverseOrder ? 'md:order-2' : 'md:order-1'}`}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
             {children}
         </div>
         <div className={reverseOrder ? 'md:order-1' : 'md:order-2'}>
@@ -29,7 +29,7 @@ const FeatureSection: React.FC<{ title: string; children: React.ReactNode; iconD
 );
 
 const FeatureIcon: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-    <div className={`flex items-center justify-center bg-bg-tertiary rounded-lg h-28 md:h-48 lg:h-full w-full shadow-inner ${className} bg-gradient-to-br from-bg-tertiary via-bg-secondary to-bg-tertiary`}>
+    <div className={`flex items-center justify-center bg-gray-100 rounded-lg h-28 md:h-48 lg:h-full w-full shadow-inner ${className} bg-gradient-to-br from-gray-100 via-white to-gray-100`}>
         {children}
     </div>
 );
@@ -40,19 +40,19 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-modal-backdrop backdrop-blur-sm animate-fade-in" onClick={onClose}>
-        <div className="bg-bg-secondary shadow-2xl w-[95vw] max-w-lg h-auto max-h-[90vh] rounded-xl flex flex-col md:w-[90vw] md:max-w-4xl" onClick={e => e.stopPropagation()}>
-            <header className="flex items-center justify-between flex-shrink-0 p-4 border-b border-border-primary">
+        <div className="bg-white shadow-2xl w-[95vw] max-w-lg h-auto max-h-[90vh] rounded-xl flex flex-col md:w-[90vw] md:max-w-4xl" onClick={e => e.stopPropagation()}>
+            <header className="flex items-center justify-between flex-shrink-0 p-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                     <BotIcon className="w-7 h-7 text-bg-accent" />
-                    <h2 className="text-xl font-bold text-text-primary">About Innovation AI</h2>
+                    <h2 className="text-xl font-bold text-gray-900">About Innovation AI</h2>
                 </div>
-                <button onClick={onClose} className="p-2 rounded-full hover:bg-bg-tertiary-hover transition-colors">
-                    <XIcon className="w-5 h-5 text-text-secondary" />
+                <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <XIcon className="w-5 h-5 text-gray-500" />
                 </button>
             </header>
             <div className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-none">
-                    <p className="text-center text-text-secondary mb-6">
+                    <p className="text-center text-gray-600 mb-6">
                         Welcome to Innovation AI, your dedicated partner for brainstorming and creative exploration. This app is built to help you generate, visualize, and organize your most ambitious ideas using the power of Google's Gemini models.
                     </p>
                     
@@ -118,8 +118,8 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                     </FeatureSection>
                 </div>
             </div>
-             <footer className="flex-shrink-0 flex items-center justify-between p-4 border-t border-border-primary bg-bg-tertiary/50">
-                <p className="text-sm text-text-secondary">Happy Innovating!</p>
+             <footer className="flex-shrink-0 flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
+                <p className="text-sm text-gray-500">Happy Innovating!</p>
                 <button
                     onClick={onClose}
                     className="px-6 py-2 rounded-lg bg-bg-accent text-text-on-accent hover:bg-bg-accent-hover transition-colors font-semibold"

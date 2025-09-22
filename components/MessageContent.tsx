@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ChevronDownIcon from './icons/ChevronDownIcon';
+
+// Props interface including the sender
+interface MessageContentProps {
+  text: string;
+  isStreaming?: boolean;
+  sender: 'user' | 'ai' | 'system';
+}
+
 
 // Renders inline markdown elements like bold and code.
 const renderInlineMarkdown = (text: string) => {
@@ -15,6 +24,9 @@ const renderInlineMarkdown = (text: string) => {
     return part;
   });
 };
+
+const orderedListRegex = /^\d+[.)]\s/;
+const unorderedListRegex = /^(\*|-|•)\s/;
 
 // A more robust, line-by-line markdown parser that correctly handles various block types.
 const renderFormattedText = (text: string) => {
@@ -34,11 +46,10 @@ const renderFormattedText = (text: string) => {
         if (trimmedLine.startsWith('# ')) { elements.push(<h1 key={i}>{renderInlineMarkdown(trimmedLine.substring(2))}</h1>); i++; continue; }
 
         // Unordered List
-        if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+        if (unorderedListRegex.test(trimmedLine)) {
             const listItems = [];
-            // Gather all consecutive list items
-            while (i < lines.length && (lines[i].trim().startsWith('* ') || lines[i].trim().startsWith('- '))) {
-                listItems.push(lines[i].trim().substring(2));
+            while (i < lines.length && unorderedListRegex.test(lines[i].trim())) {
+                listItems.push(lines[i].trim().replace(unorderedListRegex, ''));
                 i++;
             }
             elements.push(<ul key={`ul-${i}`}>{listItems.map((item, idx) => <li key={idx}>{renderInlineMarkdown(item)}</li>)}</ul>);
@@ -46,10 +57,10 @@ const renderFormattedText = (text: string) => {
         }
 
         // Ordered List
-        if (/^\d+\.\s/.test(trimmedLine)) {
+        if (orderedListRegex.test(trimmedLine)) {
             const listItems = [];
-            while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-                listItems.push(lines[i].trim().replace(/^\d+\.\s/, ''));
+            while (i < lines.length && orderedListRegex.test(lines[i].trim())) {
+                listItems.push(lines[i].trim().replace(orderedListRegex, ''));
                 i++;
             }
             elements.push(<ol key={`ol-${i}`}>{listItems.map((item, idx) => <li key={idx}>{renderInlineMarkdown(item)}</li>)}</ol>);
@@ -67,7 +78,7 @@ const renderFormattedText = (text: string) => {
         while (i < lines.length && lines[i].trim() !== '') {
             const currentLineTrimmed = lines[i].trim();
             // Break if we hit a new block type
-            if (/^(#|(\*|-)\s|\d+\.\s)/.test(currentLineTrimmed)) {
+            if (/^(#)/.test(currentLineTrimmed) || unorderedListRegex.test(currentLineTrimmed) || orderedListRegex.test(currentLineTrimmed)) {
                 break;
             }
             paraLines.push(lines[i]);
@@ -75,7 +86,7 @@ const renderFormattedText = (text: string) => {
         }
 
         if (paraLines.length > 0) {
-            // Join with space for soft line breaks within a paragraph
+            // Join with a space to respect soft line breaks within a paragraph.
             elements.push(<p key={`p-${i}`}>{renderInlineMarkdown(paraLines.join(' '))}</p>);
         }
     }
@@ -84,11 +95,20 @@ const renderFormattedText = (text: string) => {
 };
 
 
-const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming = false }) => {
+const MessageContent: React.FC<MessageContentProps> = ({ text, isStreaming = false, sender }) => {
   const [displayedText, setDisplayedText] = useState('');
   const animationTimer = useRef<number | null>(null);
   const textRef = useRef(text);
   textRef.current = text;
+
+  // New state and constants for collapsible content
+  const CONTENT_THRESHOLD = 1200; // Characters to trigger collapsibility
+  const isLongContent = text.length > CONTENT_THRESHOLD;
+  const [isExpanded, setIsExpanded] = useState(false); // Long content starts collapsed
+
+  // Determine if content should be expanded (always true when streaming)
+  const isEffectivelyExpanded = isExpanded || isStreaming;
+  const canBeCollapsed = isLongContent && !isStreaming;
 
   // Letter-by-letter streaming animation effect.
   useEffect(() => {
@@ -135,8 +155,51 @@ const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ tex
     };
   }, [text, isStreaming]);
 
-  // Use the new, robust renderer on the streaming text.
-  return renderFormattedText(displayedText);
+  const content = renderFormattedText(displayedText);
+  
+  // Determine gradient color based on sender for the fade-out effect
+  const gradientColor = sender === 'user'
+      ? 'from-bg-accent'
+      : 'from-bg-secondary';
+      
+  // By applying the prose classes directly to the content wrapper,
+  // we ensure list styles (like custom bullets) are applied correctly,
+  // even within the complex layout of the collapsible container.
+  const proseClasses = `prose ${sender === 'user' ? 'prose-invert' : ''}`;
+
+  return (
+    <div className="relative">
+      <div
+        className={`
+          transition-all duration-700 ease-in-out overflow-hidden
+          ${proseClasses}
+          ${isLongContent && !isEffectivelyExpanded ? 'max-h-80' : 'max-h-[5000px]'}
+        `}
+      >
+        {content}
+        {/* Fade-out effect for collapsed content */}
+        {isLongContent && !isEffectivelyExpanded && (
+          <div className={`absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t ${gradientColor} to-transparent pointer-events-none`} />
+        )}
+      </div>
+
+      {canBeCollapsed && (
+        <div className={`
+            flex justify-end 
+            ${isExpanded ? 'pt-2' : 'absolute bottom-2 right-2'}
+        `}>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-bg-tertiary/80 hover:bg-bg-tertiary-hover/90 backdrop-blur-sm text-text-secondary hover:text-text-primary transition-all duration-200"
+            aria-expanded={isExpanded}
+          >
+            <span>{isExpanded ? 'Show Less' : 'Show More'}</span>
+            <ChevronDownIcon className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default MessageContent;

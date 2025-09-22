@@ -274,10 +274,14 @@
           margin-top: 0.8em; /* Increased spacing between list items */
           padding-left: 0.25em; /* Space between marker and text */
       }
-      /* Style list markers to be more prominent */
+      /* Style list markers to be more prominent and visually engaging */
       .prose ul li::marker, .prose ol li::marker {
           color: var(--bg-accent);
           font-weight: 600;
+      }
+      .prose ul li::marker {
+          content: "✦"; /* Use a star-like bullet for 'innovation' theme */
+          font-size: 0.9em;
       }
       /* Headings provide their own bottom margin, so no extra top margin is needed for the following element */
       .prose h1 + *, .prose h2 + *, .prose h3 + * {

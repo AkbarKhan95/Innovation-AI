@@ -7,6 +7,7 @@ import ArrowLeftIcon from './icons/ArrowLeftIcon';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
+  onViewTerms: () => void;
 }
 
 // This helper function can live inside the component file as it's not used elsewhere.
@@ -52,7 +53,7 @@ const generateAvatar = (name: string): string => {
 };
 
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onViewTerms }) => {
   const [step, setStep] = useState<'initial' | 'email' | 'code'>('initial');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -223,9 +224,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           
           <p className="mt-8 text-xs text-text-secondary text-center">
             By signing in, you agree to our{' '}
-            <a href="terms.html" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-primary transition-colors">
+            <button type="button" onClick={onViewTerms} className="underline hover:text-text-primary transition-colors">
               terms of service
-            </a>.
+            </button>.
           </p>
         </div>
       </div>
