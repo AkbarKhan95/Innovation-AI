@@ -190,7 +190,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ text, isStreaming = fal
         `}>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-bg-tertiary/80 hover:bg-bg-tertiary-hover/90 backdrop-blur-sm text-text-secondary hover:text-text-primary transition-all duration-200"
+            className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-white text-gray-800 hover:bg-gray-100 transition-all duration-200 border border-gray-200 shadow-sm"
             aria-expanded={isExpanded}
           >
             <span>{isExpanded ? 'Show Less' : 'Show More'}</span>

@@ -196,7 +196,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onViewTerms }) => {
   );
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-bg-primary text-text-primary">
+    <div className="flex flex-col md:flex-row w-full h-full bg-bg-primary text-text-primary">
       {/* Branding Section (Left - hidden on mobile) */}
       <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-12 text-center">
         <BotIcon className="w-40 h-40 animate-float" />
@@ -205,7 +205,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onViewTerms }) => {
       </div>
 
       {/* Form Section (Right) */}
-      <div className="flex flex-col justify-start md:justify-center w-full md:w-1/2 p-8 relative pt-20 md:pt-8">
+      <div className="flex flex-col justify-start md:justify-center w-full md:w-1/2 p-8 relative pt-20 md:pt-8 overflow-y-auto">
         {step !== 'initial' && (
             <button onClick={() => setStep(step === 'code' ? 'email' : 'initial')} className="absolute top-6 left-6 p-2 rounded-full hover:bg-bg-tertiary transition-colors text-text-primary" aria-label="Go back">
                 <ArrowLeftIcon className="w-6 h-6" />

@@ -264,7 +264,8 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
         });
     };
 
-    const nodePositions = new Map(boardData.nodes.map(n => [n.id, n.position]));
+    // FIX: Explicitly type nodePositions to fix type inference issues.
+    const nodePositions: Map<string, BoardNode['position']> = new Map(boardData.nodes.map(n => [n.id, n.position]));
     const connectingNodePos = connectingFromId ? nodePositions.get(connectingFromId) : null;
     // FIX: Destructure viewport properties to avoid type inference issues in complex JSX.
     const { pan, zoom } = boardData.viewport;

@@ -47,7 +47,7 @@ const GroundingSources: React.FC<GroundingSourcesProps> = ({ chunks }) => {
 
             <div
                 id="grounding-sources-list"
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                className={`transition-all duration-300 ease-in-out overflow-y-auto ${
                     isOpen ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'
                 }`}
             >

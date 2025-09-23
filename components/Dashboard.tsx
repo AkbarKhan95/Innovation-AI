@@ -34,9 +34,9 @@ const themes = [
 ] as const;
 
 const voiceOptions = [
-    { id: 'female', label: 'Girl', icon: NewFemaleIcon, sampleText: "Hi! I can read the AI's responses for you in a clear and friendly voice." },
-    { id: 'male', label: 'Boy', icon: NewMaleIcon, sampleText: "Of course. I can read the text aloud for you with a calm and steady voice." },
-    { id: 'female-robot', label: 'AI (Female)', icon: NewBotIcon, sampleText: "Processing request. Voice output initiated. All systems nominal." },
+    { id: 'female', label: 'Female', icon: NewFemaleIcon, sampleText: "Hi! I can read the AI's responses for you in a natural and friendly voice." },
+    { id: 'male', label: 'Male', icon: NewMaleIcon, sampleText: "Of course. I can read the text aloud for you with a clear and natural voice." },
+    { id: 'female-robot', label: 'AI (Female)', icon: NewBotIcon, sampleText: "Processing request. Voice output initiated. All systems are online." },
     { id: 'male-robot', label: 'AI (Male)', icon: NewBotIcon, sampleText: "Auditory interface engaged. I will recite the generated text for you now." },
 ] as const;
 

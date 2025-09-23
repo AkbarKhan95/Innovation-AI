@@ -64,31 +64,31 @@ export const useSpeechSynthesis = (defaultVoice: VoiceOption) => {
     }, [availableVoices]);
 
     const applyVoiceSettings = (utterance: SpeechSynthesisUtterance, voiceOption: VoiceOption) => {
-        // Drastically altered settings to make each voice completely unique.
+        // Fine-tuned settings for more natural and pleasant-sounding voices.
         switch (voiceOption) {
-            // Voice 1: Female - Clear, bright, and slightly fast. Designed for a pleasant, natural-sounding narration.
-            case 'female': 
-                utterance.pitch = 1.3; // Higher pitch for a clearer female voice.
-                utterance.rate = 1.1;  // Slightly faster than normal speech.
+            // Voice 1: Female (Girl) - A clear, friendly female voice with a natural pace.
+            case 'female':
+                utterance.pitch = 1.2;
+                utterance.rate = 1.0;
                 break;
-            // Voice 2: Male - A very deep, slightly slower voice for a more resonant and "hoarse" tone.
-            case 'male': 
-                utterance.pitch = 0.2; // Very low pitch for the deepest possible male voice.
-                utterance.rate = 0.9;  // Slightly slowed down for a more deliberate, gravelly feel.
+            // Voice 2: Male (Boy) - A more natural, slightly higher-pitched, and energetic boy's voice.
+            case 'male':
+                utterance.pitch = 1.05;
+                utterance.rate = 1.1;
                 break;
-            // Voice 3: Female Robot - Very high-pitched and deliberately slower to sound synthetic and robotic.
-            case 'female-robot': 
-                utterance.pitch = 1.9; // Near-maximum pitch for a distinct robotic sound.
-                utterance.rate = 0.8;  // Slower pace for emphasis.
+            // Voice 3: AI (Female) - A higher-pitched, clear synthetic voice that is not overly robotic.
+            case 'female-robot':
+                utterance.pitch = 1.4;
+                utterance.rate = 0.9;
                 break;
-            // Voice 4: Male Robot - The absolute deepest, monotone, and slow voice to create a classic, mechanical computer voice.
-            case 'male-robot': 
-                utterance.pitch = 0.1; // The lowest possible pitch for an extremely deep, robotic tone.
-                utterance.rate = 0.7;  // Very slow for a mechanical feel.
+            // Voice 4: AI (Male) - A deep, resonant, and steady robotic voice, distinct from the boy's voice.
+            case 'male-robot':
+                utterance.pitch = 0.5;
+                utterance.rate = 0.85;
                 break;
-            default: 
-                utterance.pitch = 1; 
-                utterance.rate = 1; 
+            default:
+                utterance.pitch = 1;
+                utterance.rate = 1;
                 break;
         }
     };

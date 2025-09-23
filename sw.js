@@ -1,5 +1,3 @@
-
-
 const CACHE_NAME = 'innovation-ai-cache-v1';
 // This list includes all local assets and key CDN dependencies for offline-first functionality.
 const urlsToCache = [
