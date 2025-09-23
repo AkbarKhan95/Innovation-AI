@@ -564,46 +564,82 @@ const App: React.FC = () => {
                 if (!chatRef.current || isRegeneration) {
                     chatRef.current = createChat(modelId, historyForApiCall!);
                 }
-                const stream = await generateChatResponseStream(chatRef.current, prompt, modelId, file);
 
-                let isFirstChunk = true;
+                const processStream = async () => {
+                    const stream = await generateChatResponseStream(chatRef.current!, prompt, modelId, file);
+                    
+                    let latestText = '';
+                    let latestGroundingChunks: GroundingChunk[] | undefined = undefined;
+                    let isFirstUpdate = true;
+                    let frameId: number | null = null;
+                    let lastRenderTime = 0;
+                    const RENDER_INTERVAL = 100; // Render at most every 100ms
 
-                for await (const chunk of stream) {
-                    if (isFirstChunk) {
-                        updateAIMessage(aiMessageId, { text: chunk.text, groundingChunks: chunk.groundingChunks ?? undefined, loading: false });
-                        isFirstChunk = false;
-                    } else {
-                        updateAIMessage(aiMessageId, { text: chunk.text, groundingChunks: chunk.groundingChunks ?? undefined });
+                    const renderUpdate = () => {
+                        const updates: Partial<Message> = { text: latestText, groundingChunks: latestGroundingChunks };
+                        if (isFirstUpdate) {
+                            updates.loading = false;
+                        }
+                        updateAIMessage(aiMessageId, updates);
+                        isFirstUpdate = false;
+                        frameId = null;
+                    };
+
+                    for await (const chunk of stream) {
+                        latestText = chunk.text;
+                        if (chunk.groundingChunks) {
+                            latestGroundingChunks = chunk.groundingChunks;
+                        }
+
+                        const now = Date.now();
+                        if (!frameId && (now - lastRenderTime > RENDER_INTERVAL)) {
+                            lastRenderTime = now;
+                            frameId = requestAnimationFrame(renderUpdate);
+                        }
+                    }
+
+                    if (frameId) {
+                        cancelAnimationFrame(frameId);
+                    }
+
+                    // Final, guaranteed render to show the complete message
+                    renderUpdate();
+
+                    // Handle cases where the stream was empty (e.g., safety block)
+                    if (isFirstUpdate && latestText.length === 0) {
+                        setChatSessions(prev => prev.map(s => {
+                            if (s.id !== currentSessionId) return s;
+                            return { ...s, messages: s.messages.filter(m => m.id !== aiMessageId) };
+                        }));
+                    }
+                    
+                    return { final_text: latestText, final_chunks: latestGroundingChunks };
+                };
+                
+                const { final_text, final_chunks } = await processStream();
+
+                // Generate suggestions only if the stream produced content.
+                if (final_text) {
+                    const userMessageForHistory: Message = { id: 'temp-user-id', sender: 'user', text: prompt, file };
+                    const aiMessageForHistory: Message = { id: aiMessageId, sender: 'ai', text: final_text, groundingChunks: final_chunks };
+                    const finalHistory = [...(historyForApiCall || []), userMessageForHistory, aiMessageForHistory];
+
+                    const suggestions = await generateSuggestions(finalHistory);
+                    if (suggestions.length > 0) {
+                        updateAIMessage(aiMessageId, { suggestions });
                     }
                 }
                 
-                if (isFirstChunk) { // Handle cases where the stream is empty and no error occurred
-                    setChatSessions(prev => prev.map(s => {
-                        if (s.id !== currentSessionId) return s;
-                        return { ...s, messages: s.messages.filter(m => m.id !== aiMessageId) };
-                    }));
+                const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
+                if (shouldGenerateTitle) {
+                    generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
                 }
+
             } catch (error) {
                 console.error("Error generating text content:", error);
                 updateAIMessage(aiMessageId, { text: `Sorry, I ran into an error: ${getFriendlyErrorMessage(error)}`, loading: false });
             } finally {
                 setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
-                
-                // Use a timeout to ensure the state update from streaming is processed before generating suggestions.
-                setTimeout(async () => {
-                    const finalCurrentSession = chatSessionsRef.current.find(s => s.id === currentSession.id);
-                    if (finalCurrentSession && finalCurrentSession.messages.length > 0) {
-                        const suggestions = await generateSuggestions(finalCurrentSession.messages);
-                        if (suggestions.length > 0) {
-                            updateAIMessage(aiMessageId, { suggestions });
-                        }
-                    }
-                }, 0);
-
-                const shouldGenerateTitle = !isRegeneration && (historyForApiCall?.length ?? 0) === 0 && prompt.length > 10;
-                if (shouldGenerateTitle) {
-                    generateTitle(prompt).then(newTitle => handleRenameChat(currentSession.id, newTitle));
-                }
             }
         } else {
             // --- IMAGE/VIDEO MODEL LOGIC ---
