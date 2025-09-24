@@ -271,7 +271,7 @@ const BrainstormBoard: React.FC<BrainstormBoardProps> = ({ boardData, onUpdateBo
     const { pan, zoom } = boardData.viewport;
 
     return (
-        <div className="fixed inset-0 z-30 bg-bg-primary animate-fade-in">
+        <div className="fixed inset-0 z-30 bg-bg-solid animate-fade-in">
             <div 
                 ref={boardRef}
                 className="w-full h-full bg-bg-tertiary overflow-hidden relative cursor-default touch-none"

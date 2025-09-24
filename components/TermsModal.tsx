@@ -41,7 +41,7 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept, onClose, show
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-modal-backdrop backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl m-4 flex flex-col max-h-[90vh] overflow-hidden">
         <header className="flex-shrink-0 p-6 flex items-center justify-between gap-4 border-b border-gray-200">
             <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100">

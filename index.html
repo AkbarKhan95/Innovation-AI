@@ -1,3 +1,4 @@
+
 <script type="importmap">
 {
   "imports": {
@@ -38,6 +39,7 @@
         --border-secondary: #d1d5db; /* gray-300 */
         --scrollbar-thumb: #a0aec0; /* gray-400 */
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #f7f8fa;
       }
       [data-theme="dark"] {
         --bg-primary: #111827; /* gray-900 */
@@ -54,10 +56,11 @@
         --border-secondary: #4b5563; /* gray-600 */
         --scrollbar-thumb: #718096; /* gray-500 */
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #111827;
       }
       [data-theme="midnight"] {
         --bg-primary: #000000;
-        --bg-secondary: #111111;
+        --bg-secondary: rgba(17, 17, 17, 0.75);
         --bg-tertiary: #1f1f1f;
         --bg-tertiary-hover: #333333;
         --bg-input: #1f1f1f;
@@ -70,6 +73,7 @@
         --border-secondary: #333333;
         --scrollbar-thumb: #555555;
         --modal-backdrop: rgba(0, 0, 0, 0.7);
+        --bg-solid: #000000;
       }
       [data-theme="gradient"] {
         --bg-primary-gradient: linear-gradient(135deg, #000428 0%, #004e92 100%);
@@ -88,24 +92,26 @@
         --border-secondary: rgba(255, 255, 255, 0.3);
         --scrollbar-thumb: #718096;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #000428;
       }
       [data-theme="starlight"] {
         --bg-primary-gradient: linear-gradient(160deg, #020420 0%, #0b192f 100%);
         --bg-primary: transparent;
-        --bg-secondary: #111c32;
+        --bg-secondary: rgba(17, 28, 50, 0.75);
         --bg-tertiary: #1e293b;
         --bg-tertiary-hover: #334155;
         --bg-input: #111c32;
         --bg-accent: #67e8f9;
         --bg-accent-hover: #22d3ee;
         --bg-accent-disabled: #0e7490;
-        --text-primary: #e5e7eb;
-        --text-secondary: #9ca3af;
+        --text-primary: #e5e7eb; /* Changed for better contrast */
+        --text-secondary: #9ca3af; /* Changed for better contrast */
         --text-on-accent: #0e7490;
         --border-primary: #334155;
         --border-secondary: #475569;
         --scrollbar-thumb: #4b5563;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #020420;
       }
       [data-theme="aurora"] {
         --bg-primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #5b21b6 100%);
@@ -124,6 +130,7 @@
         --border-secondary: rgba(139, 92, 246, 0.4);
         --scrollbar-thumb: #6d28d9;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #1e1b4b;
       }
       [data-theme="dusk"] {
         --bg-primary-gradient: linear-gradient(135deg, #3a0ca3 0%, #b5179e 50%, #f72585 100%);
@@ -135,13 +142,14 @@
         --bg-accent: #f72585;
         --bg-accent-hover: #d61a7a;
         --bg-accent-disabled: #7209b7;
-        --text-primary: #ffffff;
-        --text-secondary: #e9d5ff;
+        --text-primary: #f3f4f6; /* Changed for better contrast */
+        --text-secondary: #d1d5db; /* Changed for better contrast */
         --text-on-accent: #ffffff;
         --border-primary: rgba(247, 37, 133, 0.3);
         --border-secondary: rgba(247, 37, 133, 0.4);
         --scrollbar-thumb: #b5179e;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #3a0ca3;
       }
       [data-theme="forest"] {
         --bg-primary-gradient: linear-gradient(135deg, #001510 0%, #134e4a 100%);
@@ -153,13 +161,14 @@
         --bg-accent: #34d399;
         --bg-accent-hover: #10b981;
         --bg-accent-disabled: #047857;
-        --text-primary: #d1fae5;
-        --text-secondary: #a7f3d0;
+        --text-primary: #e5e7eb; /* Changed for better contrast */
+        --text-secondary: #a7f3d0; /* Changed for better contrast */
         --text-on-accent: #064e3b;
         --border-primary: rgba(16, 185, 129, 0.3);
         --border-secondary: rgba(16, 185, 129, 0.4);
         --scrollbar-thumb: #065f46;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #001510;
       }
       [data-theme="crimson"] {
         --bg-primary-gradient: linear-gradient(135deg, #000000 0%, #1a2a6c 50%, #b21f1f 100%);
@@ -178,6 +187,7 @@
         --border-secondary: rgba(239, 68, 68, 0.5);
         --scrollbar-thumb: #1a2a6c;
         --modal-backdrop: rgba(0, 0, 0, 0.6);
+        --bg-solid: #000000;
       }
 
       /* Custom Utility Classes for Theming */
@@ -187,10 +197,12 @@
       .bg-bg-input { background-color: var(--bg-input); }
       .bg-bg-accent { background-color: var(--bg-accent); }
       .bg-modal-backdrop { background-color: var(--modal-backdrop); }
+      .bg-bg-solid { background-color: var(--bg-solid); }
       
       .text-text-primary { color: var(--text-primary); }
       .text-text-secondary { color: var(--text-secondary); }
       .text-text-on-accent { color: var(--text-on-accent); }
+      .text-bg-accent { color: var(--bg-accent); }
 
       .border-border-primary { border-color: var(--border-primary); }
       .border-border-secondary { border-color: var(--border-secondary); }
@@ -199,6 +211,7 @@
       .hover\:bg-bg-tertiary-hover:hover { background-color: var(--bg-tertiary-hover); }
       .hover\:bg-bg-accent-hover:hover { background-color: var(--bg-accent-hover); }
       .hover\:text-text-primary:hover { color: var(--text-primary); }
+      .hover\:text-bg-accent:hover { color: var(--bg-accent); }
       .hover\:border-border-secondary:hover { border-color: var(--border-secondary); }
 
       .disabled\:bg-bg-accent-disabled:disabled { background-color: var(--bg-accent-disabled); }
@@ -279,9 +292,28 @@
           color: var(--bg-accent);
           font-weight: 600;
       }
-      .prose ul li::marker {
-          content: "✦"; /* Use a star-like bullet for 'innovation' theme */
-          font-size: 0.9em;
+      /* First-level bullet points: a prominent star */
+      .prose > ul > li::marker {
+          content: '✦';
+          font-size: 0.8em;
+          transform: translateY(-1px); /* Minor vertical alignment correction */
+      }
+      /* Second-level bullet points: an arrow for secondary items */
+      .prose ul ul > li::marker {
+          content: '➔';
+          font-size: 0.8em;
+          color: var(--text-secondary);
+      }
+      /* Third-level bullet points: an open circle for tertiary items */
+      .prose ul ul ul > li::marker {
+          content: '○';
+          font-size: 0.7em;
+          color: var(--text-secondary); /* Subtler color for nested items */
+      }
+      /* Fourth-level and deeper bullet points: a simple dash for quaternary items */
+      .prose ul ul ul ul > li::marker {
+          content: '—';
+          color: var(--text-secondary);
       }
       /* Headings provide their own bottom margin, so no extra top margin is needed for the following element */
       .prose h1 + *, .prose h2 + *, .prose h3 + * {
@@ -293,6 +325,8 @@
         background-color: var(--bg-primary);
         color: var(--text-primary);
         transition: background-color 0.3s ease, color 0.3s ease;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       /* Add a smooth transition to common elements for theme changes */

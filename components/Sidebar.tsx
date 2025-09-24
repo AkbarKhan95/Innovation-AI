@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatSession, User } from '../types';
 import { AVAILABLE_MODELS } from '../constants';
@@ -75,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col h-full p-2 border-r border-border-primary">
         
         <div className={`flex items-center p-2 mb-2 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-            <button onClick={onGoToHome} className={`text-xl font-bold text-text-primary ${isCollapsed ? 'hidden' : ''} transition-colors hover:text-blue-500`}>
+            <button onClick={onGoToHome} className={`text-xl font-bold text-text-primary ${isCollapsed ? 'hidden' : ''} transition-colors hover:text-bg-accent`}>
                 Innovation AI
             </button>
             <button onClick={toggleCollapse} title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'} className="p-2 rounded-full hover:bg-bg-tertiary-hover transition-colors">
@@ -167,7 +169,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 
                 {openMenuId === session.id && !isCollapsed && (
-                  <div ref={menuRef} className="absolute right-0 top-full mt-1 z-20 w-40 bg-bg-secondary rounded-lg shadow-xl border border-border-primary overflow-hidden animate-fade-in">
+                  <div ref={menuRef} className="absolute right-0 top-full mt-1 z-20 w-40 bg-bg-solid rounded-lg shadow-xl border border-border-primary overflow-hidden animate-fade-in">
                       <button
                         onClick={() => {
                           setEditingSessionId(session.id);

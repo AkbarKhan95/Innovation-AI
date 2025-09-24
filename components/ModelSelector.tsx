@@ -15,7 +15,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onSelectModel, onPromptWi
     return (
         <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center overflow-y-auto">
             <div className="w-full max-w-4xl mx-auto flex flex-col items-center pt-16 md:pt-12">
-                <BotIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-300 dark:text-gray-600 mb-4" />
+                <BotIcon className="w-16 h-16 md:w-20 md:h-20 text-text-secondary mb-4" />
                 <h2 className="text-2xl md:text-3xl font-bold mb-3 text-text-primary">Welcome to Innovation AI</h2>
                 <p className="text-text-secondary mb-4 max-w-lg">
                     Begin by selecting a powerful model, or kickstart your creative process with one of our innovation-focused topics.

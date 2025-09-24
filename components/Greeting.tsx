@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { User, Topic } from '../types';
 import { TOPICS } from '../constants';
@@ -12,7 +13,7 @@ const Greeting: React.FC<GreetingProps> = ({ user, onPromptWithTopic }) => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 text-center animate-fade-in">
       <div className="w-full max-w-2xl mx-auto">
-        <BotIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-300 dark:text-gray-600 mb-4 mx-auto" />
+        <BotIcon className="w-16 h-16 md:w-20 md:h-20 text-text-secondary mb-4 mx-auto" />
         <h2 className="text-2xl md:text-4xl font-bold mb-3 text-text-primary">
           Hello, {user.name.split(' ')[0]}!
         </h2>

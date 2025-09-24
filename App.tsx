@@ -404,22 +404,45 @@ const App: React.FC = () => {
         }));
     };
 
-    const generateVisualResponse = async (text: string, modelType: 'Image' | 'Video') => {
-        if (!currentSession) return;
-
-        setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: true } : s));
-
-        const aiResponseMessage: Message = { 
-            id: crypto.randomUUID(), 
-            sender: 'ai', 
+    const generateVisualResponse = async (
+        text: string,
+        modelType: 'Image' | 'Video',
+        options: { userMessage?: Message; newModelId?: AIModel['id'] } = {}
+    ) => {
+        const sessionId = currentSessionId;
+        if (!sessionId) return;
+        const { userMessage, newModelId } = options;
+    
+        const aiResponseMessage: Message = {
+            id: crypto.randomUUID(),
+            sender: 'ai',
             text: '',
-            loading: modelType === 'Image' ? 'image' : 'video' 
+            loading: modelType === 'Image' ? 'image' : 'video',
         };
-
-        setChatSessions(prev => prev.map(s =>
-            s.id === currentSession!.id ? { ...s, messages: [...s.messages, aiResponseMessage] } : s
-        ));
-        
+    
+        setChatSessions(prev =>
+            prev.map(s => {
+                if (s.id !== sessionId) return s;
+    
+                let newMessages = s.messages;
+                if (userMessage) {
+                    newMessages = [...newMessages, userMessage];
+                }
+                newMessages = [...newMessages, aiResponseMessage];
+    
+                const updatedSession: ChatSession = {
+                    ...s,
+                    messages: newMessages,
+                    isLoading: true,
+                };
+    
+                if (newModelId) {
+                    updatedSession.modelId = newModelId;
+                }
+                return updatedSession;
+            })
+        );
+    
         try {
             if (modelType === 'Image') {
                 const modelId = 'imagen-4.0-generate-001';
@@ -450,7 +473,7 @@ const App: React.FC = () => {
             const errorMessage = getFriendlyErrorMessage(error);
             updateAIMessage(aiResponseMessage.id, { text: `Sorry, I ran into an error: ${errorMessage}`, loading: false });
         } finally {
-            setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: false } : s));
+            setChatSessions(prev => prev.map(s => (s.id === sessionId ? { ...s, isLoading: false } : s)));
         }
     };
 
@@ -541,6 +564,28 @@ const App: React.FC = () => {
         const historyForApiCall = isRegeneration ? historyForApi : currentSession.messages;
         const modelId = currentSession.modelId || 'gemini-2.5-flash';
         const model = AVAILABLE_MODELS.find(m => m.id === modelId);
+    
+        // --- TRIGGER PHRASE DETECTION ---
+        if (model?.type === 'Text' && !isRegeneration) {
+            const imageRegex = /generate an image\s*(?:of|about|that depicts|showing|for)?\s*(.*)/i;
+            const videoRegex = /generate a video\s*(?:of|about|that depicts|showing|for)?\s*(.*)/i;
+    
+            const imageMatch = prompt.match(imageRegex);
+            if (imageMatch && imageMatch[1]) {
+                const visualPrompt = imageMatch[1].trim();
+                const userMessage: Message = { id: crypto.randomUUID(), sender: 'user', text: prompt, file };
+                generateVisualResponse(visualPrompt, 'Image', { userMessage, newModelId: 'imagen-4.0-generate-001' });
+                return;
+            }
+    
+            const videoMatch = prompt.match(videoRegex);
+            if (videoMatch && videoMatch[1]) {
+                const visualPrompt = videoMatch[1].trim();
+                const userMessage: Message = { id: crypto.randomUUID(), sender: 'user', text: prompt, file };
+                generateVisualResponse(visualPrompt, 'Video', { userMessage, newModelId: 'veo-2.0-generate-001' });
+                return;
+            }
+        }
 
         setChatSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, isLoading: true } : s));
 
@@ -856,6 +901,36 @@ const App: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
+    const handleStartImageEdit = async (message: Message) => {
+        if (!currentSession || !message.imageUrl) return;
+
+        // Switch to Image model if not already active. This is important for the logic in handleSendMessage.
+        if (currentSession.modelId !== 'imagen-4.0-generate-001') {
+            handleModelChange('imagen-4.0-generate-001');
+        }
+
+        try {
+            // Fetch the data URL, convert to a Blob, then to our File object format.
+            const response = await fetch(message.imageUrl);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAttachedFile({
+                    name: `edit-${message.id.substring(0, 8)}.png`,
+                    type: blob.type,
+                    size: blob.size,
+                    dataUrl: reader.result as string,
+                });
+                // Focus the input area to prompt the user for their edit instruction.
+                textareaRef.current?.focus();
+            };
+            reader.readAsDataURL(blob);
+        } catch (error) {
+            console.error("Error preparing image for editing:", error);
+            // You could add a user-facing error notification here.
+        }
+    };
+
     const handleCancelEdit = () => {
         setEditingMessage(null);
         setEditText('');
@@ -949,6 +1024,7 @@ const App: React.FC = () => {
                         setEditingSessionId={setEditingSessionId}
                         isSidebarOpen={isSidebarOpen}
                         isCollapsed={isCollapsed}
+                        // FIX: Pass handleToggleCollapse instead of the undefined toggleCollapse.
                         toggleCollapse={handleToggleCollapse}
                         user={user}
                         onLogout={handleLogout}
@@ -1017,7 +1093,7 @@ const App: React.FC = () => {
                                                         </div>
                                                         )}
 
-                                                        <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-xl group ${ msg.sender === 'user' ? 'items-end' : 'items-start' }`}>
+                                                        <div className={`flex flex-col gap-1 max-w-[85%] md:max-w-2xl group ${ msg.sender === 'user' ? 'items-end' : 'items-start' }`}>
                                                             
                                                             <div className={`
                                                                 px-5 py-4 rounded-2xl border transition-all
@@ -1074,6 +1150,11 @@ const App: React.FC = () => {
                                                                     <button onClick={() => handleConvertToVideo(msg.text)} title="Create Video" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                     <VideoIcon className="w-4 h-4" />
                                                                     </button>
+                                                                    {msg.imageUrl && (
+                                                                        <button onClick={() => handleStartImageEdit(msg)} title="Edit Image" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
+                                                                            <PencilIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                    )}
                                                                     <button onClick={() => handleAddToBoard(msg.text)} title="Add to Brainstorm Board" className="p-1.5 rounded-full hover:bg-bg-tertiary-hover text-text-secondary">
                                                                     <AddToBoardIcon className="w-4 h-4" />
                                                                     </button>
